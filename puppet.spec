@@ -4,8 +4,8 @@
 
 Summary: A network tool for managing many disparate systems
 Name: puppet
-Version: 0.18.4
-Release: 2%{?dist}
+Version: 0.19.0
+Release: 1%{?dist}
 License: GPL
 Group: System Environment/Base
 
@@ -127,6 +127,9 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Thu Sep  7 2006 David Lutterkort <dlutter@redhat.com> - 0.19.0-1
+- New version
+
 * Tue Aug  1 2006 David Lutterkort <dlutter@redhat.com> - 0.18.4-2
 - Use /usr/bin/ruby directly instead of /usr/bin/env ruby in
   executables. Otherwise, initscripts break since pidof can't find the
