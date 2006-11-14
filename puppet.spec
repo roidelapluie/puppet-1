@@ -4,7 +4,7 @@
 
 Summary: A network tool for managing many disparate systems
 Name: puppet
-Version: 0.20.0
+Version: 0.20.1
 Release: 1%{?dist}
 License: GPL
 Group: System Environment/Base
@@ -127,6 +127,9 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon Nov 13 2006 David Lutterkort <dlutter@redhat.com> - 0.20.1-1
+- New version
+
 * Mon Oct 23 2006 David Lutterkort <dlutter@redhat.com> - 0.20.0-1
 - New version
 
