@@ -2,9 +2,12 @@
 %define pbuild %{_builddir}/%{name}-%{version}
 %define confdir conf/redhat
 
+%define has_ruby_abi 0%{?fedora:%fedora} >= 5 || 0%{?rhel:%rhel} >= 5
+%define has_ruby_noarch %has_ruby_abi
+
 Summary: A network tool for managing many disparate systems
 Name: puppet
-Version: 0.20.1
+Version: 0.22.0
 Release: 1%{?dist}
 License: GPL
 Group: System Environment/Base
@@ -13,10 +16,14 @@ URL: http://reductivelabs.com/projects/puppet/
 Source: http://reductivelabs.com/downloads/puppet/%{name}-%{version}.tgz
 
 Requires: ruby >= 1.8.1
+%if %has_ruby_abi
 Requires: ruby(abi) = 1.8
+%endif
 Requires: facter >= 1.1.4
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+%if %has_ruby_noarch
 BuildArchitectures: noarch
+%endif
 BuildRequires: ruby >= 1.8.1
 
 %description
@@ -108,25 +115,32 @@ exit 0
 
 %preun
 if [ "$1" = 0 ] ; then
-	/sbin/service puppet stop > /dev/null 2>&1
-	/sbin/chkconfig --del puppet
+  /sbin/service puppet stop > /dev/null 2>&1
+  /sbin/chkconfig --del puppet
 fi
 
 %preun server
 if [ "$1" = 0 ] ; then
-	/sbin/service puppetmaster stop > /dev/null 2>&1
-	/sbin/chkconfig --del puppetmaster
+  /sbin/service puppetmaster stop > /dev/null 2>&1
+  /sbin/chkconfig --del puppetmaster
 fi
 
 %postun server
 if [ "$1" -ge 1 ]; then
-	 /sbin/service puppetmaster condrestart > /dev/null 2>&1
+  /sbin/service puppetmaster condrestart > /dev/null 2>&1
 fi
 
 %clean
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Fri Jan  5 2007 David Lutterkort <dlutter@redhat.com> - 0.22.0-1
+- New version
+
+* Mon Nov 20 2006 David Lutterkort <dlutter@redhat.com> - 0.20.1-2
+- Make require ruby(abi) and buildarch: noarch conditional for fedora 5 or
+  later to allow building on older fedora releases
+
 * Mon Nov 13 2006 David Lutterkort <dlutter@redhat.com> - 0.20.1-1
 - New version
 
