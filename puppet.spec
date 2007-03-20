@@ -7,14 +7,13 @@
 
 Summary: A network tool for managing many disparate systems
 Name: puppet
-Version: 0.22.1
-Release: 2%{?dist}
+Version: 0.22.2
+Release: 1%{?dist}
 License: GPL
 Group: System Environment/Base
 
 URL: http://reductivelabs.com/projects/puppet/
 Source: http://reductivelabs.com/downloads/puppet/%{name}-%{version}.tgz
-Patch0: no-lockdir.patch
 
 Requires: ruby >= 1.8.1
 %if %has_ruby_abi
@@ -44,7 +43,6 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
-%patch0 -p1
 
 %build
 for f in bin/* ; do 
@@ -106,8 +104,10 @@ find %{buildroot}%{ruby_sitelibdir} -type f -perm +ugo+x -print0 | xargs -0 -r %
 %pre
 /usr/sbin/groupadd -r puppet 2>/dev/null || :
 /usr/sbin/useradd -g puppet -c "Puppet" \
-    -s /sbin/nologin -r -d /var/puppet puppet 2> /dev/null || :
-
+    -s /sbin/nologin -r -d /var/lib/puppet puppet 2> /dev/null || :
+if [ $1 -gt 1 ] ; then
+  /usr/sbin/usermod -d /var/lib/puppet puppet || :
+fi
 %post
 /sbin/chkconfig --add puppet
 exit 0
@@ -136,6 +136,10 @@ fi
 %{__rm} -rf %{buildroot}
 
 %changelog
+* Mon Mar 19 2007 David Lutterkort <dlutter@redhat.com> - 0.22.2-1
+- Set puppet's homedir to /var/lib/puppet, not /var/puppet
+- Remove no-lockdir patch, not needed anymore
+
 * Mon Feb 12 2007 David Lutterkort <dlutter@redhat.com> - 0.22.1-2
 - Fix bogus config parameter in puppetd.conf
 
