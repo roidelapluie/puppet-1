@@ -145,10 +145,12 @@ touch %{buildroot}%{_sysconfdir}/puppet/puppetd.conf
 %doc %{_mandir}/man8/puppetmasterd.8.gz
 %doc %{_mandir}/man8/puppetrun.8.gz
 
+# Fixed uid/gid were assigned in bz 472073 (Fedora), 471918 (RHEL-5),
+# and 471919 (RHEL-4)
 %pre
-getent group puppet >/dev/null || groupadd -r puppet
+getent group puppet >/dev/null || groupadd -r puppet -g 52
 getent passwd puppet >/dev/null || \
-useradd -r -g puppet -d %{_localstatedir}/lib/puppet -s /sbin/nologin \
+useradd -r -u 52 -g puppet -d %{_localstatedir}/lib/puppet -s /sbin/nologin \
     -c "Puppet" puppet || :
 # ensure that old setups have the right puppet home dir
 if [ $1 -gt 1 ] ; then
