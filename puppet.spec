@@ -3,7 +3,7 @@
 
 Name:           puppet
 Version:        0.24.7
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
@@ -156,7 +156,6 @@ touch %{buildroot}%{_sysconfdir}/puppet/puppetd.conf
 getent group puppet >/dev/null || groupadd -r puppet -g 52
 getent passwd puppet >/dev/null || \
 useradd -r -u 52 -g puppet -d %{_localstatedir}/lib/puppet -s /sbin/nologin \
-useradd -r -g puppet -d %{_localstatedir}/lib/puppet -s /sbin/nologin \
     -c "Puppet" puppet || :
 # ensure that old setups have the right puppet home dir
 if [ $1 -gt 1 ] ; then
@@ -195,6 +194,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Tue Dec 16 2008 Todd Zullinger <tmz@pobox.com> - 0.24.7-4
+- Remove redundant useradd from %%pre
+
 * Tue Dec 16 2008 Jeroen van Meeuwen <kanarip@kanarip.com> - 0.24.7-3
 - New upstream version
 - Set a static uid and gid (#472073, #471918, #471919)
