@@ -3,7 +3,7 @@
 
 Name:           puppet
 Version:        0.24.7
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
@@ -194,6 +194,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Thu Feb 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.24.7-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
+
 * Tue Dec 16 2008 Todd Zullinger <tmz@pobox.com> - 0.24.7-4
 - Remove redundant useradd from %%pre
 
