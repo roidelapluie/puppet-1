@@ -2,8 +2,8 @@
 %define confdir conf/redhat
 
 Name:           puppet
-Version:        0.24.7
-Release:        5%{?dist}
+Version:        0.24.8
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
@@ -12,6 +12,7 @@ Group:          System Environment/Base
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+BuildRequires:  facter >= 1.5
 BuildRequires:  ruby >= 1.8.1
 
 %if 0%{?fedora} || 0%{?rhel} >= 5
@@ -25,7 +26,7 @@ Requires:       ruby-shadow
 Requires:       libselinux-ruby
 %endif
 
-Requires:       facter >= 1.1.4
+Requires:       facter >= 1.5
 Requires:       ruby >= 1.8.1
 Requires:       ruby-augeas
 Requires(pre):  shadow-utils
@@ -56,10 +57,11 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 
+# Move puppetca, puppetd, and puppetmasterd to sbin
+mkdir sbin
+mv bin/puppet{ca,d,masterd} sbin/
+
 %build
-for f in bin/* ; do
-  sed -i -e '1c#!/usr/bin/ruby' $f
-done
 # Fix some rpmlint complaints
 for f in mac_dscl.pp mac_dscl_revert.pp \
          mac_netinfo.pp mac_pkgdmg.pp ; do
@@ -75,24 +77,12 @@ find examples/ -type f | xargs chmod a-x
 
 %install
 rm -rf %{buildroot}
-install -d -m0755 %{buildroot}%{_sbindir}
-install -d -m0755 %{buildroot}%{_bindir}
-install -d -m0755 %{buildroot}%{ruby_sitelibdir}
+ruby install.rb --destdir=%{buildroot} --quick --no-rdoc
+
 install -d -m0755 %{buildroot}%{_sysconfdir}/puppet/manifests
-install -d -m0755 %{buildroot}%{_docdir}/%{name}-%{version}
-install -d -m0755 %{buildroot}%{_mandir}/man8
 install -d -m0755 %{buildroot}%{_localstatedir}/lib/puppet
 install -d -m0755 %{buildroot}%{_localstatedir}/run/puppet
 install -d -m0755 %{buildroot}%{_localstatedir}/log/puppet
-install -Dp -m0755 bin/* %{buildroot}%{_sbindir}
-mv %{buildroot}%{_sbindir}/puppet %{buildroot}%{_bindir}/puppet
-mv %{buildroot}%{_sbindir}/ralsh %{buildroot}%{_bindir}/ralsh
-mv %{buildroot}%{_sbindir}/filebucket %{buildroot}%{_bindir}/filebucket
-mv %{buildroot}%{_sbindir}/puppetrun %{buildroot}%{_bindir}/puppetrun
-mv %{buildroot}%{_sbindir}/puppetdoc %{buildroot}%{_bindir}/puppetdoc
-install -Dp -m0644 lib/puppet.rb %{buildroot}%{ruby_sitelibdir}/puppet.rb
-cp -a lib/puppet %{buildroot}%{ruby_sitelibdir}
-find %{buildroot}%{ruby_sitelibdir} -type f -perm +ugo+x -print0 | xargs -0 -r chmod a-x
 install -Dp -m0644 %{confdir}/client.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/puppet
 install -Dp -m0755 %{confdir}/client.init %{buildroot}%{_initrddir}/puppet
 install -Dp -m0644 %{confdir}/server.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/puppetmaster
@@ -100,7 +90,7 @@ install -Dp -m0755 %{confdir}/server.init %{buildroot}%{_initrddir}/puppetmaster
 install -Dp -m0644 %{confdir}/fileserver.conf %{buildroot}%{_sysconfdir}/puppet/fileserver.conf
 install -Dp -m0644 %{confdir}/puppet.conf %{buildroot}%{_sysconfdir}/puppet/puppet.conf
 install -Dp -m0644 %{confdir}/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/puppet
-install -Dp -m0644 man/man8/* %{buildroot}%{_mandir}/man8
+
 # We need something for these ghosted files, otherwise rpmbuild
 # will complain loudly. They won't be included in the binary packages
 touch %{buildroot}%{_sysconfdir}/puppet/puppetmasterd.conf
@@ -153,13 +143,13 @@ touch %{buildroot}%{_sysconfdir}/puppet/puppetd.conf
 # Fixed uid/gid were assigned in bz 472073 (Fedora), 471918 (RHEL-5),
 # and 471919 (RHEL-4)
 %pre
-getent group puppet >/dev/null || groupadd -r puppet -g 52
-getent passwd puppet >/dev/null || \
+getent group puppet &>/dev/null || groupadd -r puppet -g 52 &>/dev/null
+getent passwd puppet &>/dev/null || \
 useradd -r -u 52 -g puppet -d %{_localstatedir}/lib/puppet -s /sbin/nologin \
-    -c "Puppet" puppet || :
+    -c "Puppet" puppet &>/dev/null || :
 # ensure that old setups have the right puppet home dir
 if [ $1 -gt 1 ] ; then
-  usermod -d %{_localstatedir}/lib/puppet puppet || :
+  usermod -d %{_localstatedir}/lib/puppet puppet &>/dev/null || :
 fi
 
 %post
@@ -194,6 +184,12 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Mon Mar 23 2009 Todd Zullinger <tmz@pobox.com> - 0.24.8-1
+- Update to 0.24.8
+- Quiet output from %%pre
+- Use upstream install script
+- Increase required facter version to >= 1.5
+
 * Thu Feb 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.24.7-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
 
