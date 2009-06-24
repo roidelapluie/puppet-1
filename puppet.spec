@@ -1,9 +1,12 @@
+# Augeas and SELinux requirements may be disabled at build time by passing
+# --without augeas and/or --without selinux to rpmbuild or mock
+
 %{!?ruby_sitelibdir: %define ruby_sitelibdir %(ruby -rrbconfig -e 'puts Config::CONFIG["sitelibdir"]')}
 %define confdir conf/redhat
 
 Name:           puppet
 Version:        0.24.8
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
@@ -23,12 +26,13 @@ Requires:       ruby-shadow
 
 # Pull in libselinux-ruby where it is available
 %if 0%{?fedora} >=9
-Requires:       libselinux-ruby
+%{!?_without_selinux:Requires: libselinux-ruby}
 %endif
 
 Requires:       facter >= 1.5
 Requires:       ruby >= 1.8.1
-Requires:       ruby-augeas
+%{!?_without_augeas:Requires: ruby-augeas}
+
 Requires(pre):  shadow-utils
 Requires(post): chkconfig
 Requires(preun): chkconfig
@@ -97,8 +101,20 @@ touch %{buildroot}%{_sysconfdir}/puppet/puppetmasterd.conf
 touch %{buildroot}%{_sysconfdir}/puppet/puppetca.conf
 touch %{buildroot}%{_sysconfdir}/puppet/puppetd.conf
 
+# Install emacs mode files
+emacsdir=%{buildroot}%{_datadir}/emacs/site-lisp
+install -Dp -m0644 ext/emacs/puppet-mode.el $emacsdir/puppet-mode.el
+install -Dp -m0644 ext/emacs/puppet-mode-init.el \
+    $emacsdir/site-start.d/puppet-mode-init.el
+
+# Install vim syntax files
+vimdir=%{buildroot}%{_datadir}/vim/vimfiles
+install -Dp -m0644 ext/vim/ftdetect/puppet.vim $vimdir/ftdetect/puppet.vim
+install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
+
 %files
 %defattr(-, root, root, 0755)
+%doc CHANGELOG COPYING LICENSE README examples ext
 %{_bindir}/puppet
 %{_bindir}/ralsh
 %{_bindir}/filebucket
@@ -111,8 +127,10 @@ touch %{buildroot}%{_sysconfdir}/puppet/puppetd.conf
 %config(noreplace) %{_sysconfdir}/sysconfig/puppet
 %config(noreplace) %{_sysconfdir}/puppet/puppet.conf
 %ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetd.conf
-%doc CHANGELOG COPYING LICENSE README examples
 %config(noreplace) %{_sysconfdir}/logrotate.d/puppet
+# We don't want to require emacs or vim, so we need to own these dirs
+%{_datadir}/emacs
+%{_datadir}/vim/vimfiles
 # These need to be owned by puppet so the server can
 # write to them
 %attr(-, puppet, puppet) %{_localstatedir}/run/puppet
@@ -184,6 +202,11 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Fri May 29 2009 Todd Zullinger <tmz@pobox.com> - 0.24.8-2
+- Make Augeas and SELinux requirements build time options
+- Install emacs mode and vim syntax files (#491437)
+- Include ext/ directory in %%doc
+
 * Mon Mar 23 2009 Todd Zullinger <tmz@pobox.com> - 0.24.8-1
 - Update to 0.24.8
 - Quiet output from %%pre
