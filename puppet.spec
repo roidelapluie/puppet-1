@@ -6,7 +6,7 @@
 
 Name:           puppet
 Version:        0.24.8
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
@@ -202,6 +202,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Sun Jul 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.24.8-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
+
 * Fri May 29 2009 Todd Zullinger <tmz@pobox.com> - 0.24.8-2
 - Make Augeas and SELinux requirements build time options
 - Install emacs mode and vim syntax files (#491437)
