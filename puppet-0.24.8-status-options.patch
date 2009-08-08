@@ -1,0 +1,41 @@
+From ea04f2700ebdbac7c5abd263df1bbda9eee12097 Mon Sep 17 00:00:00 2001
+From: Todd Zullinger <tmz@pobox.com>
+Date: Fri, 3 Jul 2009 09:08:17 -0400
+Subject: [PATCH/puppet 1/2] conf/redhat/client.init: Fix #2123, status options on older RHEL
+
+On RHEL < 5, the status function does not accept a -p option.  Using it
+causes 'service puppet status' to produce erroneous output.  This was
+also reported by Aaron Dummer in Red Hat bug #501577.
+---
+ conf/redhat/client.init |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/conf/redhat/client.init b/conf/redhat/client.init
+index 44caab1..f40e81d 100644
+--- a/conf/redhat/client.init
++++ b/conf/redhat/client.init
+@@ -62,6 +62,11 @@ restart() {
+     start
+ }
+ 
++rh_status() {
++    status | grep -q -- '-p' 2>/dev/null && statusopts="-p $pidfile"
++    status $statusopts $puppetd
++}
++
+ genconfig() {
+   echo -n $"Generate configuration puppet: "
+   $puppetd ${PUPPET_OPTS} ${PUPPET_EXTRA_OPTS} --genconfig
+@@ -84,8 +89,7 @@ case "$1" in
+ 	[ -f "$pidfile" ] && restart
+ 	;;
+   status)
+-        status -p "$pidfile" $puppetd
+-        RETVAL=$?
++        rh_status
+ 	;;
+   once)
+         shift
+-- 
+1.6.3.3
+

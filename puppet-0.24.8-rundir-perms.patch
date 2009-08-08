@@ -1,0 +1,25 @@
+From f9ccc92662c53d9890e337d4e9f1629eb1ff650f Mon Sep 17 00:00:00 2001
+From: Jeroen van Meeuwen (Fedora Unity) <kanarip@fedoraunity.org>
+Date: Wed, 24 Jun 2009 15:19:01 +0200
+Subject: [PATCH/puppet 1/6] Simplest fix for #495096 as it applies to the Fedora based distributions using the Red Hat RPM. Story continues.
+
+---
+ lib/puppet/defaults.rb |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/lib/puppet/defaults.rb b/lib/puppet/defaults.rb
+index e36dd70..077faab 100644
+--- a/lib/puppet/defaults.rb
++++ b/lib/puppet/defaults.rb
+@@ -68,7 +68,7 @@ module Puppet
+         },
+         :rundir => { 
+             :default => rundir,
+-            :mode => 01777,
++            :mode => 0755,
+             :desc => "Where Puppet PID files are kept."
+         },
+         :genconfig => [false,
+-- 
+1.6.3.3
+

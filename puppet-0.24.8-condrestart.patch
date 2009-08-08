@@ -1,0 +1,82 @@
+From fc161e4a5ad4d470d0fe17b734004ab675eaa6ae Mon Sep 17 00:00:00 2001
+From: Todd Zullinger <tmz@pobox.com>
+Date: Fri, 3 Jul 2009 10:22:19 -0400
+Subject: [PATCH/puppet 2/2] conf/redhat/*.init: Fix condrestart/try-restart
+
+Previously, the Red Hat init scripts used the $pidfile or $lockfile as a
+test for whether to restart the daemons.  This caused condrestart to
+start the daemons even when they were not running, in cases where they
+had died or been killed without cleaning up the $pidfile/$lockfile.
+
+This was reported by Ingvar Hagelund in Red Hat bug #480600.
+---
+ conf/redhat/client.init |    7 ++++++-
+ conf/redhat/server.init |   11 ++++++++---
+ 2 files changed, 14 insertions(+), 4 deletions(-)
+
+diff --git a/conf/redhat/client.init b/conf/redhat/client.init
+index f40e81d..fda156c 100644
+--- a/conf/redhat/client.init
++++ b/conf/redhat/client.init
+@@ -67,6 +67,10 @@ rh_status() {
+     status $statusopts $puppetd
+ }
+ 
++rh_status_q() {
++        rh_status >/dev/null 2>&1
++}
++
+ genconfig() {
+   echo -n $"Generate configuration puppet: "
+   $puppetd ${PUPPET_OPTS} ${PUPPET_EXTRA_OPTS} --genconfig
+@@ -86,7 +90,8 @@ case "$1" in
+         reload
+ 	;;
+   condrestart|try-restart)
+-	[ -f "$pidfile" ] && restart
++	rh_status_q || exit 0
++	restart
+ 	;;
+   status)
+         rh_status
+diff --git a/conf/redhat/server.init b/conf/redhat/server.init
+index 6871b9a..74cb52f 100644
+--- a/conf/redhat/server.init
++++ b/conf/redhat/server.init
+@@ -89,7 +89,7 @@ genconfig() {
+   $PUPPETMASTER $PUPPETMASTER_OPTS --genconfig
+ }
+ 
+-puppetmaster_status() {
++rh_status() {
+     if [ -n "$PUPPETMASTER_PORTS" ] && [ ${#PUPPETMASTER_PORTS[@]} -gt 1 ]; then
+         for ((i=0; i<${#PUPPETMASTER_PORTS[@]}; i++)); do
+             echo -en "Port ${PUPPETMASTER_PORTS[$i]}: "
+@@ -103,6 +103,10 @@ puppetmaster_status() {
+     return $RETVAL
+ }
+ 
++rh_status_q() {
++        rh_status >/dev/null 2>&1
++}
++
+ case "$1" in
+   start)
+ 	start
+@@ -114,10 +118,11 @@ case "$1" in
+         restart
+ 	;;
+   condrestart)
+-	[ -f "$lockfile" ] && restart
++	rh_status_q || exit 0
++	restart
+ 	;;
+   status)
+-    puppetmaster_status
++    rh_status
+ 	;;
+   genconfig)
+ 	genconfig
+-- 
+1.6.3.3
+

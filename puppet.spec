@@ -6,11 +6,25 @@
 
 Name:           puppet
 Version:        0.24.8
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
 Source0:        http://reductivelabs.com/downloads/puppet/%{name}-%{version}.tgz
+
+# https://bugzilla.redhat.com/495096
+Patch0:         puppet-0.24.8-rundir-perms.patch
+# https://bugzilla.redhat.com/475201
+Patch1:         puppet-0.24.8-supplementary-groups.patch
+# http://projects.reductivelabs.com/issues/1963
+Patch2:         puppet-0.24.8-read-proc-mounts.patch
+# https://bugzilla.redhat.com/501577
+Patch3:         puppet-0.24.8-status-options.patch
+# https://bugzilla.redhat.com/480600
+Patch4:         puppet-0.24.8-condrestart.patch
+# https://bugzilla.redhat.com/515728
+Patch5:         puppet-0.24.8-activerecord-test.patch
+
 Group:          System Environment/Base
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -24,9 +38,13 @@ Requires:       ruby(abi) = 1.8
 Requires:       ruby-shadow
 %endif
 
-# Pull in libselinux-ruby where it is available
-%if 0%{?fedora} >=9
+# Pull in ruby selinux bindings where available
+%if 0%{?fedora}
+%if 0%{?fedora} >= 12
+%{!?_without_selinux:Requires: ruby(selinux)}
+%else
 %{!?_without_selinux:Requires: libselinux-ruby}
+%endif
 %endif
 
 Requires:       facter >= 1.5
@@ -61,6 +79,15 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 
+%patch0 -p1
+%patch1 -p1
+%patch2 -p1
+%patch3 -p1
+%patch4 -p1
+%if 0%{?fedora} >= 11
+%patch5 -p1
+%endif
+
 # Move puppetca, puppetd, and puppetmasterd to sbin
 mkdir sbin
 mv bin/puppet{ca,d,masterd} sbin/
@@ -75,6 +102,7 @@ done
 for f in external/nagios.rb network/http_server/mongrel.rb relationship.rb; do
   sed -i -e '1d' lib/puppet/$f
 done
+chmod +x ext/puppetstoredconfigclean.rb
 
 find examples/ -type f -empty | xargs rm
 find examples/ -type f | xargs chmod a-x
@@ -86,7 +114,7 @@ ruby install.rb --destdir=%{buildroot} --quick --no-rdoc
 install -d -m0755 %{buildroot}%{_sysconfdir}/puppet/manifests
 install -d -m0755 %{buildroot}%{_localstatedir}/lib/puppet
 install -d -m0755 %{buildroot}%{_localstatedir}/run/puppet
-install -d -m0755 %{buildroot}%{_localstatedir}/log/puppet
+install -d -m0750 %{buildroot}%{_localstatedir}/log/puppet
 install -Dp -m0644 %{confdir}/client.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/puppet
 install -Dp -m0755 %{confdir}/client.init %{buildroot}%{_initrddir}/puppet
 install -Dp -m0644 %{confdir}/server.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/puppetmaster
@@ -101,6 +129,12 @@ touch %{buildroot}%{_sysconfdir}/puppet/puppetmasterd.conf
 touch %{buildroot}%{_sysconfdir}/puppet/puppetca.conf
 touch %{buildroot}%{_sysconfdir}/puppet/puppetd.conf
 
+# Install the ext/ directory to %{_datadir}/%{name}
+install -d %{buildroot}%{_datadir}/%{name}
+cp -a ext/ %{buildroot}%{_datadir}/%{name}
+# emacs and vim bits are installed elsewhere
+rm -rf %{buildroot}%{_datadir}/%{name}/ext/{emacs,vim}
+
 # Install emacs mode files
 emacsdir=%{buildroot}%{_datadir}/emacs/site-lisp
 install -Dp -m0644 ext/emacs/puppet-mode.el $emacsdir/puppet-mode.el
@@ -114,7 +148,7 @@ install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 
 %files
 %defattr(-, root, root, 0755)
-%doc CHANGELOG COPYING LICENSE README examples ext
+%doc CHANGELOG COPYING LICENSE README examples
 %{_bindir}/puppet
 %{_bindir}/ralsh
 %{_bindir}/filebucket
@@ -130,7 +164,8 @@ install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 %config(noreplace) %{_sysconfdir}/logrotate.d/puppet
 # We don't want to require emacs or vim, so we need to own these dirs
 %{_datadir}/emacs
-%{_datadir}/vim/vimfiles
+%{_datadir}/vim
+%{_datadir}/%{name}
 # These need to be owned by puppet so the server can
 # write to them
 %attr(-, puppet, puppet) %{_localstatedir}/run/puppet
@@ -202,8 +237,22 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Fri Aug 07 2009 Todd Zullinger <tmz@pobox.com> - 0.24.8-4
+- Fix status -p handling on older RHEL (#501577)
+- Fix condrestart when daemon's aren't running (#480600)
+- Fix timeout reading /proc/mounts (upstream #1963)
+- Fix permissions on /var/log/puppet (#495096)
+- Fix rails test for activerecord-2.3 (#515728)
+
 * Sun Jul 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.24.8-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
+
+* Wed Jun 24 2009 Jeroen van Meeuwen <kanarip@kanarip.com>
+- Fix permissions on /var/run/puppet/ (#495096)
+- Support initializing supplementary groups (#1806, #475201, Till Maas)
+- Own the correct vim directory
+- Move ext/ outside of doc datadir (rpmlint)
+- Require ruby(selinux) rather then libselinux-ruby (#507848)
 
 * Fri May 29 2009 Todd Zullinger <tmz@pobox.com> - 0.24.8-2
 - Make Augeas and SELinux requirements build time options
