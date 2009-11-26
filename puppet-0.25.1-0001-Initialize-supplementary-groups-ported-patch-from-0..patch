@@ -1,24 +1,24 @@
-From 2a401c6897af3abbc27dfaaf162556745267d6b2 Mon Sep 17 00:00:00 2001
+From 50952a627a9c96a147c7bcac91f6e2380e483310 Mon Sep 17 00:00:00 2001
 From: Jeroen van Meeuwen (Fedora Unity) <kanarip@fedoraunity.org>
-Date: Wed, 24 Jun 2009 15:30:19 +0200
-Subject: [PATCH/puppet 2/6] Support supplementary groups (Till Maas)
+Date: Wed, 25 Nov 2009 13:38:52 +0100
+Subject: [PATCH] Initialize supplementary groups (ported patch from 0.24.8 originally from Till Maas)
 
 ---
  lib/puppet/util.rb             |    5 +++--
- lib/puppet/util/suidmanager.rb |   11 ++++++++++-
- 2 files changed, 13 insertions(+), 3 deletions(-)
+ lib/puppet/util/suidmanager.rb |   12 +++++++++++-
+ 2 files changed, 14 insertions(+), 3 deletions(-)
 
 diff --git a/lib/puppet/util.rb b/lib/puppet/util.rb
-index f8a8721..51a2a16 100644
+index 6f83c7a..8e2e8a3 100644
 --- a/lib/puppet/util.rb
 +++ b/lib/puppet/util.rb
-@@ -58,10 +58,11 @@ module Util
+@@ -55,10 +55,11 @@ module Util
              end
              unless Puppet::Util::SUIDManager.uid == user
                  begin
 +                    Puppet::Util::SUIDManager.initgroups(user)
-                     Puppet::Util::SUIDManager.uid = user 
-                     Puppet::Util::SUIDManager.euid = user 
+                     Puppet::Util::SUIDManager.uid = user
+                     Puppet::Util::SUIDManager.euid = user
 -                rescue
 -                    $stderr.puts "could not change to user %s" % user
 +                rescue => detail
@@ -27,7 +27,7 @@ index f8a8721..51a2a16 100644
                  end
              end
 diff --git a/lib/puppet/util/suidmanager.rb b/lib/puppet/util/suidmanager.rb
-index b071dca..9f6e3b6 100644
+index c5df0d1..7896945 100644
 --- a/lib/puppet/util/suidmanager.rb
 +++ b/lib/puppet/util/suidmanager.rb
 @@ -7,7 +7,7 @@ module Puppet::Util::SUIDManager
@@ -48,7 +48,7 @@ index b071dca..9f6e3b6 100644
              self.egid = convert_xid :gid, new_gid if new_gid
 +            self.initgroups(convert_xid(:uid, new_uid)) if new_uid
              self.euid = convert_xid :uid, new_uid if new_uid
-   
+ 
              yield
          ensure
              self.euid, self.egid = old_euid, old_egid
@@ -56,7 +56,7 @@ index b071dca..9f6e3b6 100644
          end
      end
      module_function :asuser
-@@ -49,6 +52,12 @@ module Puppet::Util::SUIDManager
+@@ -49,6 +52,13 @@ module Puppet::Util::SUIDManager
      end
      module_function :convert_xid
  
@@ -66,9 +66,10 @@ index b071dca..9f6e3b6 100644
 +        Process.initgroups(Etc.getpwuid(user).name, Process.gid)
 +    end
 +    module_function :initgroups
++
  
      def run_and_capture(command, new_uid=nil, new_gid=nil)
          output = Puppet::Util.execute(command, :failonfail => false, :uid => new_uid, :gid => new_gid)
 -- 
-1.6.3.3
+1.6.5.2
 

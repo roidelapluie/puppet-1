@@ -1,0 +1,27 @@
+From 8894aae81d26a9564305ae89ac159320c53dca83 Mon Sep 17 00:00:00 2001
+From: Todd Zullinger <tmz@pobox.com>
+Date: Tue, 27 Oct 2009 10:30:08 -0400
+Subject: [PATCH/puppet] conf/redhat: Prevent killproc from removing /usr/sbin/puppetmasterd
+
+Mattias Saou ran into a serious bug cause by 9dff71 (Use -p option to
+killproc).  The puppetmaster init script lacked a pidfile variable,
+which ended up with /usr/sbin/puppetmasterd being removed.
+---
+ conf/redhat/server.init |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/conf/redhat/server.init b/conf/redhat/server.init
+index 5505058..4f44206 100644
+--- a/conf/redhat/server.init
++++ b/conf/redhat/server.init
+@@ -13,6 +13,7 @@ PATH=/usr/bin:/sbin:/bin:/usr/sbin
+ export PATH
+ 
+ lockfile=/var/lock/subsys/puppetmaster
++pidfile=/var/run/puppet/puppetmasterd.pid
+ 
+ # Source function library.
+ . /etc/rc.d/init.d/functions
+-- 
+1.6.5.2
+

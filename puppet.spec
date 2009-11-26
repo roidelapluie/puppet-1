@@ -5,25 +5,18 @@
 %define confdir conf/redhat
 
 Name:           puppet
-Version:        0.24.8
-Release:        4%{?dist}
+Version:        0.25.1
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
-Source0:        http://reductivelabs.com/downloads/puppet/%{name}-%{version}.tgz
-
-# https://bugzilla.redhat.com/495096
-Patch0:         puppet-0.24.8-rundir-perms.patch
+Source0:        http://reductivelabs.com/downloads/puppet/%{name}-%{version}.tar.gz
+# Brown paper bag fix for my killproc blunder (tmz)
+Patch0:         puppet-0.25.1-server-initscript.patch
 # https://bugzilla.redhat.com/475201
-Patch1:         puppet-0.24.8-supplementary-groups.patch
-# http://projects.reductivelabs.com/issues/1963
-Patch2:         puppet-0.24.8-read-proc-mounts.patch
-# https://bugzilla.redhat.com/501577
-Patch3:         puppet-0.24.8-status-options.patch
-# https://bugzilla.redhat.com/480600
-Patch4:         puppet-0.24.8-condrestart.patch
-# https://bugzilla.redhat.com/515728
-Patch5:         puppet-0.24.8-activerecord-test.patch
+Patch1:         puppet-0.25.1-0001-Initialize-supplementary-groups-ported-patch-from-0..patch
+# https://bugzilla.redhat.com/495096
+Patch2:         puppet-0.25.1-0002-Correct-rundir-permissions.patch
 
 Group:          System Environment/Base
 
@@ -78,24 +71,14 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
-
 %patch0 -p1
 %patch1 -p1
 %patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%if 0%{?fedora} >= 11
-%patch5 -p1
-%endif
-
-# Move puppetca, puppetd, and puppetmasterd to sbin
-mkdir sbin
-mv bin/puppet{ca,d,masterd} sbin/
 
 %build
 # Fix some rpmlint complaints
 for f in mac_dscl.pp mac_dscl_revert.pp \
-         mac_netinfo.pp mac_pkgdmg.pp ; do
+         mac_pkgdmg.pp ; do
   sed -i -e'1d' examples/$f
   chmod a-x examples/$f
 done
@@ -149,17 +132,19 @@ install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 %files
 %defattr(-, root, root, 0755)
 %doc CHANGELOG COPYING LICENSE README examples
+%{_bindir}/pi
 %{_bindir}/puppet
 %{_bindir}/ralsh
 %{_bindir}/filebucket
 %{_bindir}/puppetdoc
-%exclude %{_mandir}/man8/pi.8.gz
+%{_sbindir}/puppetca
 %{_sbindir}/puppetd
 %{ruby_sitelibdir}/*
 %{_initrddir}/puppet
 %dir %{_sysconfdir}/puppet
 %config(noreplace) %{_sysconfdir}/sysconfig/puppet
 %config(noreplace) %{_sysconfdir}/puppet/puppet.conf
+%ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetca.conf
 %ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetd.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/puppet
 # We don't want to require emacs or vim, so we need to own these dirs
@@ -171,27 +156,27 @@ install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 %attr(-, puppet, puppet) %{_localstatedir}/run/puppet
 %attr(-, puppet, puppet) %{_localstatedir}/log/puppet
 %attr(-, puppet, puppet) %{_localstatedir}/lib/puppet
-%doc %{_mandir}/man8/puppet.8.gz
-%doc %{_mandir}/man8/puppet.conf.8.gz
-%doc %{_mandir}/man8/puppetd.8.gz
-%doc %{_mandir}/man8/ralsh.8.gz
-%doc %{_mandir}/man8/puppetdoc.8.gz
+%{_mandir}/man8/pi.8.gz
+%{_mandir}/man8/puppet.8.gz
+%{_mandir}/man8/puppet.conf.8.gz
+%{_mandir}/man8/puppetca.8.gz
+%{_mandir}/man8/puppetd.8.gz
+%{_mandir}/man8/ralsh.8.gz
+%{_mandir}/man8/puppetdoc.8.gz
 
 %files server
 %defattr(-, root, root, 0755)
 %{_sbindir}/puppetmasterd
-%{_bindir}/puppetrun
+%{_sbindir}/puppetrun
+%{_sbindir}/puppetqd
 %{_initrddir}/puppetmaster
 %config(noreplace) %{_sysconfdir}/puppet/fileserver.conf
 %dir %{_sysconfdir}/puppet/manifests
 %config(noreplace) %{_sysconfdir}/sysconfig/puppetmaster
-%ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetca.conf
 %ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetmasterd.conf
-%{_sbindir}/puppetca
-%doc %{_mandir}/man8/filebucket.8.gz
-%doc %{_mandir}/man8/puppetca.8.gz
-%doc %{_mandir}/man8/puppetmasterd.8.gz
-%doc %{_mandir}/man8/puppetrun.8.gz
+%{_mandir}/man8/filebucket.8.gz
+%{_mandir}/man8/puppetmasterd.8.gz
+%{_mandir}/man8/puppetrun.8.gz
 
 # Fixed uid/gid were assigned in bz 472073 (Fedora), 471918 (RHEL-5),
 # and 471919 (RHEL-4)
@@ -237,36 +222,36 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Fri Aug 07 2009 Todd Zullinger <tmz@pobox.com> - 0.24.8-4
-- Fix status -p handling on older RHEL (#501577)
-- Fix condrestart when daemon's aren't running (#480600)
-- Fix timeout reading /proc/mounts (upstream #1963)
+* Wed Nov 25 2009 Jeroen van Meeuwen <j.van.meeuwen@ogd.nl> - 0.25.1-1
+- New upstream version
+
+* Tue Oct 27 2009 Todd Zullinger <tmz@pobox.com> - 0.25.1-0.3
+- Update to 0.25.1
+- Include the pi program and man page (R.I.Pienaar)
+
+* Sat Oct 17 2009 Todd Zullinger <tmz@pobox.com> - 0.25.1-0.2.rc2
+- Update to 0.25.1rc2
+
+* Tue Sep 22 2009 Todd Zullinger <tmz@pobox.com> - 0.25.1-0.1.rc1
+- Update to 0.25.1rc1
+- Move puppetca to puppet package, it has uses on client systems
+- Drop redundant %%doc from manpage %%file listings
+
+* Fri Sep 04 2009 Todd Zullinger <tmz@pobox.com> - 0.25.0-1
+- Update to 0.25.0
 - Fix permissions on /var/log/puppet (#495096)
-- Fix rails test for activerecord-2.3 (#515728)
-
-* Sun Jul 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.24.8-3
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
-
-* Wed Jun 24 2009 Jeroen van Meeuwen <kanarip@kanarip.com>
-- Fix permissions on /var/run/puppet/ (#495096)
-- Support initializing supplementary groups (#1806, #475201, Till Maas)
-- Own the correct vim directory
-- Move ext/ outside of doc datadir (rpmlint)
-- Require ruby(selinux) rather then libselinux-ruby (#507848)
-
-* Fri May 29 2009 Todd Zullinger <tmz@pobox.com> - 0.24.8-2
-- Make Augeas and SELinux requirements build time options
 - Install emacs mode and vim syntax files (#491437)
-- Include ext/ directory in %%doc
+- Install ext/ directory in %%{_datadir}/%{name} (/usr/share/puppet)
+
+* Mon May 04 2009 Todd Zullinger <tmz@pobox.com> - 0.25.0-0.1.beta1
+- Update to 0.25.0beta1
+- Make Augeas and SELinux requirements build time options
 
 * Mon Mar 23 2009 Todd Zullinger <tmz@pobox.com> - 0.24.8-1
 - Update to 0.24.8
 - Quiet output from %%pre
 - Use upstream install script
 - Increase required facter version to >= 1.5
-
-* Thu Feb 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.24.7-5
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
 
 * Tue Dec 16 2008 Todd Zullinger <tmz@pobox.com> - 0.24.7-4
 - Remove redundant useradd from %%pre
