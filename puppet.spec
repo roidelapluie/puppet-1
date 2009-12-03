@@ -6,7 +6,7 @@
 
 Name:           puppet
 Version:        0.25.1
-Release:        1%{?dist}
+Release:        1%{?dist}.1
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
@@ -222,6 +222,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Thu Dec 03 2009 Todd Zullinger <tmz@pobox.com> - 0.25.1-1.1
+- Bump and rebuild to get 0.25.1 into rawhide
+
 * Wed Nov 25 2009 Jeroen van Meeuwen <j.van.meeuwen@ogd.nl> - 0.25.1-1
 - New upstream version
 
