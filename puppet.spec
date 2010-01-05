@@ -1,12 +1,12 @@
 # Augeas and SELinux requirements may be disabled at build time by passing
 # --without augeas and/or --without selinux to rpmbuild or mock
 
-%{!?ruby_sitelibdir: %define ruby_sitelibdir %(ruby -rrbconfig -e 'puts Config::CONFIG["sitelibdir"]')}
-%define confdir conf/redhat
+%{!?ruby_sitelibdir: %global ruby_sitelibdir %(ruby -rrbconfig -e 'puts Config::CONFIG["sitelibdir"]')}
+%global confdir conf/redhat
 
 Name:           puppet
 Version:        0.25.2
-Release:        1%{?dist}
+Release:        1%{?dist}.1
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
@@ -222,6 +222,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Tue Jan 05 2010 Todd Zullinger <tmz@pobox.com> - 0.25.2-1.1
+- Replace %%define with %%global for macros
+
 * Tue Jan 05 2010 Todd Zullinger <tmz@pobox.com> - 0.25.2-1
 - Update to 0.25.2
 - Fixes CVE-2010-0156, tmpfile security issue (#502881)
