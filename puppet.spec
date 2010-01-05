@@ -5,18 +5,14 @@
 %define confdir conf/redhat
 
 Name:           puppet
-Version:        0.25.1
-Release:        1%{?dist}.1
+Version:        0.25.2
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
 Source0:        http://reductivelabs.com/downloads/puppet/%{name}-%{version}.tar.gz
-# Brown paper bag fix for my killproc blunder (tmz)
-Patch0:         puppet-0.25.1-server-initscript.patch
-# https://bugzilla.redhat.com/475201
-Patch1:         puppet-0.25.1-0001-Initialize-supplementary-groups-ported-patch-from-0..patch
 # https://bugzilla.redhat.com/495096
-Patch2:         puppet-0.25.1-0002-Correct-rundir-permissions.patch
+Patch0:         puppet-0.25.1-0002-Correct-rundir-permissions.patch
 
 Group:          System Environment/Base
 
@@ -72,8 +68,6 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
-%patch1 -p1
-%patch2 -p1
 
 %build
 # Fix some rpmlint complaints
@@ -90,6 +84,9 @@ chmod +x ext/puppetstoredconfigclean.rb
 find examples/ -type f -empty | xargs rm
 find examples/ -type f | xargs chmod a-x
 
+# puppet-queue.conf is more of an example, used for stompserver
+mv conf/puppet-queue.conf examples/etc/puppet/
+
 %install
 rm -rf %{buildroot}
 ruby install.rb --destdir=%{buildroot} --quick --no-rdoc
@@ -104,6 +101,7 @@ install -Dp -m0644 %{confdir}/server.sysconfig %{buildroot}%{_sysconfdir}/syscon
 install -Dp -m0755 %{confdir}/server.init %{buildroot}%{_initrddir}/puppetmaster
 install -Dp -m0644 %{confdir}/fileserver.conf %{buildroot}%{_sysconfdir}/puppet/fileserver.conf
 install -Dp -m0644 %{confdir}/puppet.conf %{buildroot}%{_sysconfdir}/puppet/puppet.conf
+install -Dp -m0644 conf/auth.conf %{buildroot}%{_sysconfdir}/puppet/auth.conf
 install -Dp -m0644 %{confdir}/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/puppet
 
 # We need something for these ghosted files, otherwise rpmbuild
@@ -131,7 +129,7 @@ install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 
 %files
 %defattr(-, root, root, 0755)
-%doc CHANGELOG COPYING LICENSE README examples
+%doc CHANGELOG COPYING LICENSE README README.queueing examples
 %{_bindir}/pi
 %{_bindir}/puppet
 %{_bindir}/ralsh
@@ -144,6 +142,7 @@ install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 %dir %{_sysconfdir}/puppet
 %config(noreplace) %{_sysconfdir}/sysconfig/puppet
 %config(noreplace) %{_sysconfdir}/puppet/puppet.conf
+%config(noreplace) %{_sysconfdir}/puppet/auth.conf
 %ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetca.conf
 %ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetd.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/puppet
@@ -177,6 +176,7 @@ install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 %{_mandir}/man8/filebucket.8.gz
 %{_mandir}/man8/puppetmasterd.8.gz
 %{_mandir}/man8/puppetrun.8.gz
+%{_mandir}/man8/puppetqd.8.gz
 
 # Fixed uid/gid were assigned in bz 472073 (Fedora), 471918 (RHEL-5),
 # and 471919 (RHEL-4)
@@ -222,8 +222,10 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Thu Dec 03 2009 Todd Zullinger <tmz@pobox.com> - 0.25.1-1.1
-- Bump and rebuild to get 0.25.1 into rawhide
+* Tue Jan 05 2010 Todd Zullinger <tmz@pobox.com> - 0.25.2-1
+- Update to 0.25.2
+- Fixes CVE-2010-0156, tmpfile security issue (#502881)
+- Install auth.conf, puppetqd manpage, and queuing examples/docs
 
 * Wed Nov 25 2009 Jeroen van Meeuwen <j.van.meeuwen@ogd.nl> - 0.25.1-1
 - New upstream version
