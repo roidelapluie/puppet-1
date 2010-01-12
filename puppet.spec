@@ -5,12 +5,13 @@
 %global confdir conf/redhat
 
 Name:           puppet
-Version:        0.25.2
-Release:        1%{?dist}.1
+Version:        0.25.3
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
 Source0:        http://reductivelabs.com/downloads/puppet/%{name}-%{version}.tar.gz
+Source1:        http://reductivelabs.com/downloads/puppet/%{name}-%{version}.tar.gz.sign
 # https://bugzilla.redhat.com/495096
 Patch0:         puppet-0.25.1-0002-Correct-rundir-permissions.patch
 
@@ -222,6 +223,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Mon Jan 11 2010 Todd Zullinger <tmz@pobox.com> - 0.25.3-1
+- Update to 0.25.3
+
 * Tue Jan 05 2010 Todd Zullinger <tmz@pobox.com> - 0.25.2-1.1
 - Replace %%define with %%global for macros
 
