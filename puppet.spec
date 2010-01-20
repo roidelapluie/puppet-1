@@ -6,7 +6,7 @@
 
 Name:           puppet
 Version:        0.25.3
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppet.reductivelabs.com/
@@ -14,6 +14,8 @@ Source0:        http://reductivelabs.com/downloads/puppet/%{name}-%{version}.tar
 Source1:        http://reductivelabs.com/downloads/puppet/%{name}-%{version}.tar.gz.sign
 # https://bugzilla.redhat.com/495096
 Patch0:         puppet-0.25.1-0002-Correct-rundir-permissions.patch
+# http://projects.reductivelabs.com/issues/show/2845
+Patch1:         0001-Revert-Fix-2845-Cron-entries-using-special-parameter.patch
 
 Group:          System Environment/Base
 
@@ -69,6 +71,7 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
+%patch1 -p1
 
 %build
 # Fix some rpmlint complaints
@@ -223,6 +226,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Tue Jan 19 2010 Todd Zullinger <tmz@pobox.com> - 0.25.3-2
+- Apply upstream patch to fix cron resources (upstream #2845)
+
 * Mon Jan 11 2010 Todd Zullinger <tmz@pobox.com> - 0.25.3-1
 - Update to 0.25.3
 

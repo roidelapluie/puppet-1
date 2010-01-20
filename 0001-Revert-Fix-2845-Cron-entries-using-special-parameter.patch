@@ -1,0 +1,71 @@
+From 441879f7999f4724e8ab344e796015a7ffbfb21b Mon Sep 17 00:00:00 2001
+From: James Turnbull <james@lovedthanlost.net>
+Date: Thu, 14 Jan 2010 14:14:19 +1100
+Subject: [PATCH/puppet] Revert "Fix #2845 Cron entries using "special" parameter lose their title when changed"
+
+This reverts commit c99f394bf8c10d13f3fa7d3ab7ab43ecf454c081.
+
+The fix broke cron jobs in 0.25.3 and was reverted for the 0.25.4 release.
+---
+ lib/puppet/provider/cron/crontab.rb |   13 +++++++++----
+ spec/unit/provider/cron/crontab.rb  |   21 ---------------------
+ 2 files changed, 9 insertions(+), 25 deletions(-)
+ delete mode 100755 spec/unit/provider/cron/crontab.rb
+
+diff --git a/lib/puppet/provider/cron/crontab.rb b/lib/puppet/provider/cron/crontab.rb
+index 28ef059..6dee2e5 100755
+--- a/lib/puppet/provider/cron/crontab.rb
++++ b/lib/puppet/provider/cron/crontab.rb
+@@ -27,13 +27,18 @@ Puppet::Type.type(:cron).provide(:crontab,
+ 
+     text_line :environment, :match => %r{^\w+=}
+ 
+-    crontab = record_line :crontab, :fields => %w{special minute hour monthday month weekday command},
+-        :match => %r{^\s*(?:@(\w+)|(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+))\s+(.+)$},
+-        :optional => %w{special minute hour weekday month monthday}, :absent => "*"
++    record_line :freebsd_special, :fields => %w{special command},
++        :match => %r{^@(\w+)\s+(.+)$}, :pre_gen => proc { |record|
++            record[:special] = "@" + record[:special]
++        }
++
++    crontab = record_line :crontab, :fields => %w{minute hour monthday month weekday command},
++        :match => %r{^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.+)$},
++        :optional => %w{minute hour weekday month monthday}, :absent => "*"
+ 
+     class << crontab
+         def numeric_fields
+-            fields - [:command, :special]
++            fields - [:command]
+         end
+         # Do some post-processing of the parsed record.  Basically just
+         # split the numeric fields on ','.
+diff --git a/spec/unit/provider/cron/crontab.rb b/spec/unit/provider/cron/crontab.rb
+deleted file mode 100755
+index 5904a58..0000000
+--- a/spec/unit/provider/cron/crontab.rb
++++ /dev/null
+@@ -1,21 +0,0 @@
+-#!/usr/bin/env ruby
+-
+-Dir.chdir(File.dirname(__FILE__)) { (s = lambda { |f| File.exist?(f) ? require(f) : Dir.chdir("..") { s.call(f) } }).call("spec/spec_helper.rb") }
+-
+-describe Puppet::Type.type(:cron).provider(:crontab) do
+-    before :each do
+-        @cron_type = Puppet::Type.type(:cron)
+-        @provider = @cron_type.provider(:crontab)
+-    end
+-
+-    it "should round-trip the name as a comment for @special events" do
+-        parse = @provider.parse <<-CRON
+-# Puppet Name: test
+-@reboot /bin/echo > /tmp/puppet.txt
+-        CRON
+-        prefetch = @provider.prefetch_hook(parse)
+-
+-        @provider.to_line(prefetch[0]).should =~ /Puppet Name: test/
+-    end
+-
+-end
+-- 
+1.6.6
+
