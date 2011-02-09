@@ -6,7 +6,7 @@
 
 Name:           puppet
 Version:        0.25.5
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppetlabs.com
@@ -221,6 +221,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.25.5-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+
 * Mon May 17 2010 Todd Zullinger <tmz@pobox.com> - 0.25.5-1
 - Update to 0.25.5
 - Adjust selinux conditional for EL-6
