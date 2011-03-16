@@ -193,9 +193,29 @@ exit 0
 
 %post
 /sbin/chkconfig --add puppet || :
+if [ "$1" -ge 1 ]; then
+  # The pidfile changed from 0.25.x to 2.6.x, handle upgrades without leaving
+  # the old process running.
+  oldpid="%{_localstatedir}/run/puppet/puppetd.pid"
+  newpid="%{_localstatedir}/run/puppet/agent.pid"
+  if [ -s "$oldpid" -a ! -s "$newpid" ]; then
+    (kill $(< "$oldpid") && rm -f "$oldpid" && \
+      /sbin/service puppet start) >/dev/null 2>&1 || :
+  fi
+fi
 
 %post server
 /sbin/chkconfig --add puppetmaster || :
+if [ "$1" -ge 1 ]; then
+  # The pidfile changed from 0.25.x to 2.6.x, handle upgrades without leaving
+  # the old process running.
+  oldpid="%{_localstatedir}/run/puppet/puppetmasterd.pid"
+  newpid="%{_localstatedir}/run/puppet/master.pid"
+  if [ -s "$oldpid" -a ! -s "$newpid" ]; then
+    (kill $(< "$oldpid") && rm -f "$oldpid" && \
+      /sbin/service puppetmaster start) >/dev/null 2>&1 || :
+  fi
+fi
 
 %preun
 if [ "$1" = 0 ] ; then
@@ -228,6 +248,7 @@ rm -rf %{buildroot}
 - Ensure %%pre exits cleanly
 - Fix License tag, puppet is now GPLv2 only
 - Create and own /usr/share/puppet/modules (#615432)
+- Properly restart puppet agent/master daemons on upgrades from 0.25.x
 
 * Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.25.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
