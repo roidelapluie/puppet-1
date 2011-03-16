@@ -92,6 +92,7 @@ rm -rf %{buildroot}
 ruby install.rb --destdir=%{buildroot} --quick --no-rdoc
 
 install -d -m0755 %{buildroot}%{_sysconfdir}/puppet/manifests
+install -d -m0755 %{buildroot}%{_datadir}/%{name}/modules
 install -d -m0755 %{buildroot}%{_localstatedir}/lib/puppet
 install -d -m0755 %{buildroot}%{_localstatedir}/run/puppet
 install -d -m0750 %{buildroot}%{_localstatedir}/log/puppet
@@ -226,6 +227,7 @@ rm -rf %{buildroot}
 - Update to 2.6.6
 - Ensure %%pre exits cleanly
 - Fix License tag, puppet is now GPLv2 only
+- Create and own /usr/share/puppet/modules (#615432)
 
 * Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.25.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
