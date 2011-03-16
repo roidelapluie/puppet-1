@@ -8,7 +8,7 @@ Name:           puppet
 Version:        2.6.6
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
-License:        GPLv2+
+License:        GPLv2
 URL:            http://puppetlabs.com
 Source0:        http://puppetlabs.com/downloads/%{name}/%{name}-%{version}.tar.gz
 Source1:        http://puppetlabs.com/downloads/%{name}/%{name}-%{version}.tar.gz.sign
@@ -225,6 +225,7 @@ rm -rf %{buildroot}
 * Wed Mar 16 2011 Todd Zullinger <tmz@pobox.com> - 2.6.6-1
 - Update to 2.6.6
 - Ensure %%pre exits cleanly
+- Fix License tag, puppet is now GPLv2 only
 
 * Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.25.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
