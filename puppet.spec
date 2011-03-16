@@ -183,11 +183,12 @@ install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 getent group puppet &>/dev/null || groupadd -r puppet -g 52 &>/dev/null
 getent passwd puppet &>/dev/null || \
 useradd -r -u 52 -g puppet -d %{_localstatedir}/lib/puppet -s /sbin/nologin \
-    -c "Puppet" puppet &>/dev/null || :
+    -c "Puppet" puppet &>/dev/null
 # ensure that old setups have the right puppet home dir
 if [ $1 -gt 1 ] ; then
-  usermod -d %{_localstatedir}/lib/puppet puppet &>/dev/null || :
+  usermod -d %{_localstatedir}/lib/puppet puppet &>/dev/null
 fi
+exit 0
 
 %post
 /sbin/chkconfig --add puppet || :
@@ -197,13 +198,13 @@ fi
 
 %preun
 if [ "$1" = 0 ] ; then
-  /sbin/service puppet stop > /dev/null 2>&1
+  /sbin/service puppet stop >/dev/null 2>&1
   /sbin/chkconfig --del puppet || :
 fi
 
 %preun server
 if [ "$1" = 0 ] ; then
-  /sbin/service puppetmaster stop > /dev/null 2>&1
+  /sbin/service puppetmaster stop >/dev/null 2>&1
   /sbin/chkconfig --del puppetmaster || :
 fi
 
@@ -223,6 +224,7 @@ rm -rf %{buildroot}
 %changelog
 * Wed Mar 16 2011 Todd Zullinger <tmz@pobox.com> - 2.6.6-1
 - Update to 2.6.6
+- Ensure %%pre exits cleanly
 
 * Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.25.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
