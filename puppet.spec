@@ -5,8 +5,8 @@
 %global confdir conf/redhat
 
 Name:           puppet
-Version:        0.25.5
-Release:        2%{?dist}
+Version:        2.6.6
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2+
 URL:            http://puppetlabs.com
@@ -66,7 +66,8 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
-patch -p1 < conf/redhat/rundir-perms.patch
+patch -s -p1 < conf/redhat/rundir-perms.patch
+
 
 %build
 # Fix some rpmlint complaints
@@ -100,7 +101,6 @@ install -Dp -m0644 %{confdir}/server.sysconfig %{buildroot}%{_sysconfdir}/syscon
 install -Dp -m0755 %{confdir}/server.init %{buildroot}%{_initrddir}/puppetmaster
 install -Dp -m0644 %{confdir}/fileserver.conf %{buildroot}%{_sysconfdir}/puppet/fileserver.conf
 install -Dp -m0644 %{confdir}/puppet.conf %{buildroot}%{_sysconfdir}/puppet/puppet.conf
-install -Dp -m0644 conf/auth.conf %{buildroot}%{_sysconfdir}/puppet/auth.conf
 install -Dp -m0644 %{confdir}/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/puppet
 
 # We need something for these ghosted files, otherwise rpmbuild
@@ -214,13 +214,16 @@ fi
 
 %postun server
 if [ "$1" -ge 1 ]; then
-  /sbin/service puppetmaster condrestart > /dev/null 2>&1 || :
+  /sbin/service puppetmaster condrestart >/dev/null 2>&1 || :
 fi
 
 %clean
 rm -rf %{buildroot}
 
 %changelog
+* Wed Mar 16 2011 Todd Zullinger <tmz@pobox.com> - 2.6.6-1
+- Update to 2.6.6
+
 * Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.25.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
 
