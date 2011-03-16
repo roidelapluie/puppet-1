@@ -127,6 +127,13 @@ vimdir=%{buildroot}%{_datadir}/vim/vimfiles
 install -Dp -m0644 ext/vim/ftdetect/puppet.vim $vimdir/ftdetect/puppet.vim
 install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 
+%if 0%{?fedora} >= 15
+# Setup tmpfiles.d config
+mkdir mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
+echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
+    %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
+%endif
+
 %files
 %defattr(-, root, root, 0755)
 %doc CHANGELOG COPYING LICENSE README README.queueing examples
@@ -140,6 +147,9 @@ install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 %{ruby_sitelibdir}/*
 %{_initrddir}/puppet
 %dir %{_sysconfdir}/puppet
+%if 0%{?fedora} >= 15
+%config(noreplace) %{_sysconfdir}/tmpfiles.d/%{name}.conf
+%endif
 %config(noreplace) %{_sysconfdir}/sysconfig/puppet
 %config(noreplace) %{_sysconfdir}/puppet/puppet.conf
 %config(noreplace) %{_sysconfdir}/puppet/auth.conf
@@ -250,6 +260,7 @@ rm -rf %{buildroot}
 - Create and own /usr/share/puppet/modules (#615432)
 - Properly restart puppet agent/master daemons on upgrades from 0.25.x
 - Require libselinux-utils when selinux support is enabled
+- Support tmpfiles.d for Fedora >= 15 (#656677)
 
 * Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.25.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
