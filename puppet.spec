@@ -12,6 +12,12 @@ License:        GPLv2
 URL:            http://puppetlabs.com
 Source0:        http://puppetlabs.com/downloads/%{name}/%{name}-%{version}.tar.gz
 Source1:        http://puppetlabs.com/downloads/%{name}/%{name}-%{version}.tar.gz.sign
+# http://projects.puppetlabs.com/issues/5428
+Patch0:         0001-5428-More-fully-stub-Puppet-Resource-Reference-for-u.patch
+# http://projects.puppetlabs.com/issues/4922
+Patch1:         0001-4922-Don-t-truncate-remotely-sourced-files-on-404.patch
+# http://projects.puppetlabs.com/issues/5073
+Patch2:         0001-5073-Download-plugins-even-if-you-re-filtering-on-ta.patch
 
 Group:          System Environment/Base
 
@@ -66,6 +72,9 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
+%patch0 -p1
+%patch1 -p1
+%patch2 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
 
@@ -261,6 +270,7 @@ rm -rf %{buildroot}
 - Properly restart puppet agent/master daemons on upgrades from 0.25.x
 - Require libselinux-utils when selinux support is enabled
 - Support tmpfiles.d for Fedora >= 15 (#656677)
+- Apply a few upstream fixes for 0.25.5 regressions
 
 * Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.25.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
