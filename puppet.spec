@@ -27,11 +27,11 @@ Requires:       ruby-shadow
 %endif
 
 # Pull in ruby selinux bindings where available
-%if 0%{?fedora} >= 12 || 0%{?rhel} >= 6
-%{!?_without_selinux:Requires: ruby(selinux)}
+%if 0%{?fedora} || 0%{?rhel} >= 6
+%{!?_without_selinux:Requires: ruby(selinux), libselinux-utils}
 %else
-%if 0%{?fedora} || 0%{?rhel} >= 5
-%{!?_without_selinux:Requires: libselinux-ruby}
+%if 0%{?rhel} && 0%{?rhel} == 5
+%{!?_without_selinux:Requires: libselinux-ruby, libselinux-utils}
 %endif
 %endif
 
@@ -249,6 +249,7 @@ rm -rf %{buildroot}
 - Fix License tag, puppet is now GPLv2 only
 - Create and own /usr/share/puppet/modules (#615432)
 - Properly restart puppet agent/master daemons on upgrades from 0.25.x
+- Require libselinux-utils when selinux support is enabled
 
 * Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 0.25.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
