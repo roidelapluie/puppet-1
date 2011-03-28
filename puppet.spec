@@ -138,7 +138,7 @@ install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 
 %if 0%{?fedora} >= 15
 # Setup tmpfiles.d config
-mkdir mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
+mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
 echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
     %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
 %endif
