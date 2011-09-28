@@ -6,7 +6,7 @@
 
 Name:           puppet
 Version:        2.6.6
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2
 URL:            http://puppetlabs.com
@@ -18,6 +18,8 @@ Patch0:         0001-5428-More-fully-stub-Puppet-Resource-Reference-for-u.patch
 Patch1:         0001-4922-Don-t-truncate-remotely-sourced-files-on-404.patch
 # http://projects.puppetlabs.com/issues/5073
 Patch2:         0001-5073-Download-plugins-even-if-you-re-filtering-on-ta.patch
+# http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3848
+Patch3:         0001-Resist-directory-traversal-attacks-2.6.x.patch
 
 Group:          System Environment/Base
 
@@ -75,6 +77,7 @@ The server can also function as a certificate authority and file server.
 %patch0 -p1
 %patch1 -p1
 %patch2 -p1
+%patch3 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
 
@@ -262,6 +265,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Tue Sep 27 2011 Todd Zullinger <tmz@pobox.com> - 2.6.6-2
+- Apply upstream patch for CVE-2011-3848
+
 * Wed Mar 16 2011 Todd Zullinger <tmz@pobox.com> - 2.6.6-1
 - Update to 2.6.6
 - Ensure %%pre exits cleanly

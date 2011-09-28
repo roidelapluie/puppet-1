@@ -1,0 +1,138 @@
+From 0a92a70a22b7e85ef60ed9b4d4070433b5ec3220 Mon Sep 17 00:00:00 2001
+From: Daniel Pittman <daniel@puppetlabs.com>
+Date: Sat, 24 Sep 2011 12:44:20 -0700
+Subject: [PATCH] Resist directory traversal attacks through indirections.
+
+In various versions of Puppet it was possible to cause a directory traversal
+attack through the SSLFile indirection base class.  This was variously
+triggered through the user-supplied key, or the Subject of the certificate, in
+the code.
+
+Now, we detect bad patterns down in the base class for our indirections, and
+fail hard on them.  This reduces the attack surface with as little disruption
+to the overall codebase as possible, making it suitable to deploy as part of
+older, stable versions of Puppet.
+
+In the long term we will also address this higher up the stack, to prevent
+these problems from reoccurring, but for now this will suffice.
+
+Huge thanks to Kristian Erik Hermansen <kristian.hermansen@gmail.com> for the
+responsible disclosure, and useful analysis, around this defect.
+
+Signed-off-by: Daniel Pittman <daniel@puppetlabs.com>
+---
+ lib/puppet/indirector.rb              |    7 +++++++
+ lib/puppet/indirector/ssl_file.rb     |    6 +++++-
+ lib/puppet/indirector/yaml.rb         |    5 +++++
+ spec/unit/indirector/ssl_file_spec.rb |   19 +++++++++++++++++++
+ spec/unit/indirector/yaml_spec.rb     |   14 ++++++++++++++
+ 5 files changed, 50 insertions(+), 1 deletions(-)
+
+diff --git a/lib/puppet/indirector.rb b/lib/puppet/indirector.rb
+index e6472f4..fd6bf30 100644
+--- a/lib/puppet/indirector.rb
++++ b/lib/puppet/indirector.rb
+@@ -68,4 +68,11 @@ module Puppet::Indirector
+       self.class.indirection.save key, self
+     end
+   end
++
++
++  # Helper definition for indirections that handle filenames.
++  BadNameRegexp = Regexp.union(/^\.\./,
++                               %r{[\\/]},
++                               "\0",
++                               /(?i)^[a-z]:/)
+ end
+diff --git a/lib/puppet/indirector/ssl_file.rb b/lib/puppet/indirector/ssl_file.rb
+index 531180f..4510499 100644
+--- a/lib/puppet/indirector/ssl_file.rb
++++ b/lib/puppet/indirector/ssl_file.rb
+@@ -52,8 +52,12 @@ class Puppet::Indirector::SslFile < Puppet::Indirector::Terminus
+     (collection_directory || file_location) or raise Puppet::DevError, "No file or directory setting provided; terminus #{self.class.name} cannot function"
+   end
+ 
+-  # Use a setting to determine our path.
+   def path(name)
++    if name =~ Puppet::Indirector::BadNameRegexp then
++      Puppet.crit("directory traversal detected in #{self.class}: #{name.inspect}")
++      raise ArgumentError, "invalid key"
++    end
++
+     if ca?(name) and ca_location
+       ca_location
+     elsif collection_directory
+diff --git a/lib/puppet/indirector/yaml.rb b/lib/puppet/indirector/yaml.rb
+index 23997e9..4c488da 100644
+--- a/lib/puppet/indirector/yaml.rb
++++ b/lib/puppet/indirector/yaml.rb
+@@ -43,6 +43,11 @@ class Puppet::Indirector::Yaml < Puppet::Indirector::Terminus
+ 
+   # Return the path to a given node's file.
+   def path(name,ext='.yaml')
++    if name =~ Puppet::Indirector::BadNameRegexp then
++      Puppet.crit("directory traversal detected in #{self.class}: #{name.inspect}")
++      raise ArgumentError, "invalid key"
++    end
++
+     base = Puppet.run_mode.master? ? Puppet[:yamldir] : Puppet[:clientyamldir]
+     File.join(base, self.class.indirection_name.to_s, name.to_s + ext)
+   end
+diff --git a/spec/unit/indirector/ssl_file_spec.rb b/spec/unit/indirector/ssl_file_spec.rb
+index 37098a7..4760bd7 100755
+--- a/spec/unit/indirector/ssl_file_spec.rb
++++ b/spec/unit/indirector/ssl_file_spec.rb
+@@ -87,6 +87,25 @@ describe Puppet::Indirector::SslFile do
+       it "should set them in the setting directory, with the certificate name plus '.pem', if a directory setting is available" do
+         @searcher.path(@cert.name).should == @certpath
+       end
++
++      ['../foo', '..\\foo', './../foo', '.\\..\\foo',
++       '/foo', '//foo', '\\foo', '\\\\goo',
++       "test\0/../bar", "test\0\\..\\bar",
++       "..\\/bar", "/tmp/bar", "/tmp\\bar", "tmp\\bar",
++       " / bar", " /../ bar", " \\..\\ bar",
++       "c:\\foo", "c:/foo", "\\\\?\\UNC\\bar", "\\\\foo\\bar",
++       "\\\\?\\c:\\foo", "//?/UNC/bar", "//foo/bar",
++       "//?/c:/foo",
++      ].each do |input|
++        it "should resist directory traversal attacks (#{input.inspect})" do
++          expect { @searcher.path(input) }.to raise_error
++        end
++      end
++
++      # REVISIT: Should probably test MS-DOS reserved names here, too, since
++      # they would represent a vulnerability on a Win32 system, should we ever
++      # support that path.  Don't forget that 'CON.foo' == 'CON'
++      # --daniel 2011-09-24
+     end
+ 
+     describe "when finding certificates on disk" do
+diff --git a/spec/unit/indirector/yaml_spec.rb b/spec/unit/indirector/yaml_spec.rb
+index 86c13c5..c8fadf7 100755
+--- a/spec/unit/indirector/yaml_spec.rb
++++ b/spec/unit/indirector/yaml_spec.rb
+@@ -63,6 +63,20 @@ describe Puppet::Indirector::Yaml, " when choosing file location" do
+     it "should use the object's name to determine the file name" do
+       @store.path(:me).should =~ %r{me.yaml$}
+     end
++
++    ['../foo', '..\\foo', './../foo', '.\\..\\foo',
++     '/foo', '//foo', '\\foo', '\\\\goo',
++     "test\0/../bar", "test\0\\..\\bar",
++     "..\\/bar", "/tmp/bar", "/tmp\\bar", "tmp\\bar",
++     " / bar", " /../ bar", " \\..\\ bar",
++     "c:\\foo", "c:/foo", "\\\\?\\UNC\\bar", "\\\\foo\\bar",
++     "\\\\?\\c:\\foo", "//?/UNC/bar", "//foo/bar",
++     "//?/c:/foo",
++    ].each do |input|
++      it "should resist directory traversal attacks (#{input.inspect})" do
++        expect { @store.path(input) }.to raise_error
++      end
++    end
+   end
+ 
+   describe Puppet::Indirector::Yaml, " when storing objects as YAML" do
+-- 
+1.7.4.4
+
