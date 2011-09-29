@@ -1,0 +1,330 @@
+From 40f025a9ae0373e2e642f7811face3486bfa34d4 Mon Sep 17 00:00:00 2001
+From: Daniel Pittman <daniel@puppetlabs.com>
+Date: Thu, 29 Sep 2011 00:07:16 -0700
+Subject: [PATCH] (#9793) "secure" indirector file backed terminus base class.
+
+The file base class in the indirector trusted the request key directly, which
+made it vulnerable to the same potential for injection attacks as other
+terminus base classes.
+
+However, this is somewhat mitigated by the fact that base class is entirely
+unused.  We can simple eliminate it from the system, because nothing is more
+secure than code that doesn't exist.
+
+The only consumer of the code was in the tests, and didn't care what base
+class was used, so that was substituted with a continuing class.
+
+Signed-off-by: Daniel Pittman <daniel@puppetlabs.com>
+---
+ lib/puppet/indirector/file.rb         |   79 --------------
+ spec/unit/indirector/file_spec.rb     |  181 ---------------------------------
+ spec/unit/indirector/terminus_spec.rb |    6 +-
+ 3 files changed, 3 insertions(+), 263 deletions(-)
+ delete mode 100644 lib/puppet/indirector/file.rb
+ delete mode 100755 spec/unit/indirector/file_spec.rb
+
+diff --git a/lib/puppet/indirector/file.rb b/lib/puppet/indirector/file.rb
+deleted file mode 100644
+index b3746b7..0000000
+--- a/lib/puppet/indirector/file.rb
++++ /dev/null
+@@ -1,79 +0,0 @@
+-require 'puppet/indirector/terminus'
+-
+-# Store instances as files, usually serialized using some format.
+-class Puppet::Indirector::File < Puppet::Indirector::Terminus
+-  # Where do we store our data?
+-  def data_directory
+-    name = Puppet.run_mode.master? ? :server_datadir : :client_datadir
+-
+-    File.join(Puppet.settings[name], self.class.indirection_name.to_s)
+-  end
+-
+-  def file_format(path)
+-    path =~ /\.(\w+)$/ and return $1
+-  end
+-
+-  def file_path(request)
+-    File.join(data_directory, request.key + ".#{serialization_format}")
+-  end
+-
+-  def latest_path(request)
+-    files = Dir.glob(File.join(data_directory, request.key + ".*"))
+-    return nil if files.empty?
+-
+-    # Return the newest file.
+-    files.sort { |a, b| File.stat(b).mtime <=> File.stat(a).mtime }[0]
+-  end
+-
+-  def serialization_format
+-    model.default_format
+-  end
+-
+-  # Remove files on disk.
+-  def destroy(request)
+-    begin
+-      removed = false
+-      Dir.glob(File.join(data_directory, request.key.to_s + ".*")).each do |file|
+-        removed = true
+-        File.unlink(file)
+-      end
+-    rescue => detail
+-      raise Puppet::Error, "Could not remove #{request.key}: #{detail}"
+-    end
+-
+-    raise Puppet::Error, "Could not find files for #{request.key} to remove" unless removed
+-  end
+-
+-  # Return a model instance for a given file on disk.
+-  def find(request)
+-    return nil unless path = latest_path(request)
+-    format = file_format(path)
+-
+-    raise ArgumentError, "File format #{format} is not supported by #{self.class.indirection_name}" unless model.support_format?(format)
+-
+-    begin
+-      return model.convert_from(format, File.read(path))
+-    rescue => detail
+-      raise Puppet::Error, "Could not convert path #{path} into a #{self.class.indirection_name}: #{detail}"
+-    end
+-  end
+-
+-  # Save a new file to disk.
+-  def save(request)
+-    path = file_path(request)
+-
+-    dir = File.dirname(path)
+-
+-    raise Puppet::Error.new("Cannot save #{request.key}; parent directory #{dir} does not exist") unless File.directory?(dir)
+-
+-    begin
+-      File.open(path, "w") { |f| f.print request.instance.render(serialization_format) }
+-    rescue => detail
+-      raise Puppet::Error, "Could not write #{request.key}: #{detail}" % [request.key, detail]
+-    end
+-  end
+-
+-  def path(key)
+-    key
+-  end
+-end
+diff --git a/spec/unit/indirector/file_spec.rb b/spec/unit/indirector/file_spec.rb
+deleted file mode 100755
+index 86673f0..0000000
+--- a/spec/unit/indirector/file_spec.rb
++++ /dev/null
+@@ -1,181 +0,0 @@
+-#!/usr/bin/env ruby
+-
+-require File.dirname(__FILE__) + '/../../spec_helper'
+-require 'puppet/indirector/file'
+-
+-
+-describe Puppet::Indirector::File do
+-  before :each do
+-    Puppet::Indirector::Terminus.stubs(:register_terminus_class)
+-    @model = mock 'model'
+-    @indirection = stub 'indirection', :name => :mystuff, :register_terminus_type => nil, :model => @model
+-    Puppet::Indirector::Indirection.stubs(:instance).returns(@indirection)
+-
+-    @file_class = Class.new(Puppet::Indirector::File) do
+-      def self.to_s
+-        "Testing::Mytype"
+-      end
+-    end
+-
+-    @searcher = @file_class.new
+-
+-    @path = "/my/file"
+-    @dir = "/my"
+-
+-    @request = stub 'request', :key => @path
+-  end
+-
+-  describe "when finding files" do
+-    it "should provide a method to return file contents at a specified path" do
+-      @searcher.should respond_to(:find)
+-    end
+-
+-    it "should use the server data directory plus the indirection name if the run_mode is master" do
+-      Puppet.run_mode.expects(:master?).returns true
+-      Puppet.settings.expects(:value).with(:server_datadir).returns "/my/dir"
+-
+-      @searcher.data_directory.should == File.join("/my/dir", "mystuff")
+-    end
+-
+-    it "should use the client data directory plus the indirection name if the run_mode is not master" do
+-      Puppet.run_mode.expects(:master?).returns false
+-      Puppet.settings.expects(:value).with(:client_datadir).returns "/my/dir"
+-
+-      @searcher.data_directory.should == File.join("/my/dir", "mystuff")
+-    end
+-
+-    it "should use the newest file in the data directory matching the indirection key without extension" do
+-      @searcher.expects(:data_directory).returns "/data/dir"
+-      @request.stubs(:key).returns "foo"
+-      Dir.expects(:glob).with("/data/dir/foo.*").returns %w{/data1.stuff /data2.stuff}
+-
+-      stat1 = stub 'data1', :mtime => (Time.now - 5)
+-      stat2 = stub 'data2', :mtime => Time.now
+-      File.expects(:stat).with("/data1.stuff").returns stat1
+-      File.expects(:stat).with("/data2.stuff").returns stat2
+-
+-      @searcher.latest_path(@request).should == "/data2.stuff"
+-    end
+-
+-    it "should return nil when no files are found" do
+-      @searcher.stubs(:latest_path).returns nil
+-
+-      @searcher.find(@request).should be_nil
+-    end
+-
+-    it "should determine the file format from the file extension" do
+-      @searcher.file_format("/data2.pson").should == "pson"
+-    end
+-
+-    it "should fail if the model does not support the file format" do
+-      @searcher.stubs(:latest_path).returns "/my/file.pson"
+-
+-      @model.expects(:support_format?).with("pson").returns false
+-
+-      lambda { @searcher.find(@request) }.should raise_error(ArgumentError)
+-    end
+-  end
+-
+-  describe "when saving files" do
+-    before do
+-      @content = "my content"
+-      @file = stub 'file', :content => @content, :path => @path, :name => @path, :render => "mydata"
+-      @request.stubs(:instance).returns @file
+-    end
+-
+-    it "should provide a method to save file contents at a specified path" do
+-      @searcher.should respond_to(:save)
+-    end
+-
+-    it "should choose the file extension based on the default format of the model" do
+-      @model.expects(:default_format).returns "pson"
+-
+-      @searcher.serialization_format.should == "pson"
+-    end
+-
+-    it "should place the file in the data directory, named after the indirection, key, and format" do
+-      @searcher.stubs(:data_directory).returns "/my/dir"
+-      @searcher.stubs(:serialization_format).returns "pson"
+-
+-      @request.stubs(:key).returns "foo"
+-      @searcher.file_path(@request).should == File.join("/my/dir", "foo.pson")
+-    end
+-
+-    it "should fail intelligently if the file's parent directory does not exist" do
+-      @searcher.stubs(:file_path).returns "/my/dir/file.pson"
+-      @searcher.stubs(:serialization_format).returns "pson"
+-
+-      @request.stubs(:key).returns "foo"
+-      File.expects(:directory?).with(File.join("/my/dir")).returns(false)
+-
+-      proc { @searcher.save(@request) }.should raise_error(Puppet::Error)
+-    end
+-
+-    it "should render the instance using the file format and print it to the file path" do
+-      @searcher.stubs(:file_path).returns "/my/file.pson"
+-      @searcher.stubs(:serialization_format).returns "pson"
+-
+-      File.stubs(:directory?).returns true
+-
+-      @request.instance.expects(:render).with("pson").returns "data"
+-
+-      fh = mock 'filehandle'
+-      File.expects(:open).with("/my/file.pson", "w").yields fh
+-      fh.expects(:print).with("data")
+-
+-      @searcher.save(@request)
+-    end
+-
+-    it "should fail intelligently if a file cannot be written" do
+-      filehandle = mock 'file'
+-      File.stubs(:directory?).returns(true)
+-      File.stubs(:open).yields(filehandle)
+-      filehandle.expects(:print).raises(ArgumentError)
+-
+-      @searcher.stubs(:file_path).returns "/my/file.pson"
+-      @model.stubs(:default_format).returns "pson"
+-
+-      @instance.stubs(:render).returns "stuff"
+-
+-      proc { @searcher.save(@request) }.should raise_error(Puppet::Error)
+-    end
+-  end
+-
+-  describe "when removing files" do
+-    it "should provide a method to remove files" do
+-      @searcher.should respond_to(:destroy)
+-    end
+-
+-    it "should remove files in all formats found in the data directory that match the request key" do
+-      @searcher.stubs(:data_directory).returns "/my/dir"
+-      @request.stubs(:key).returns "me"
+-
+-      Dir.expects(:glob).with(File.join("/my/dir", "me.*")).returns %w{/one /two}
+-
+-      File.expects(:unlink).with("/one")
+-      File.expects(:unlink).with("/two")
+-
+-      @searcher.destroy(@request)
+-    end
+-
+-    it "should throw an exception if no file is found" do
+-      @searcher.stubs(:data_directory).returns "/my/dir"
+-      @request.stubs(:key).returns "me"
+-
+-      Dir.expects(:glob).with(File.join("/my/dir", "me.*")).returns []
+-
+-      proc { @searcher.destroy(@request) }.should raise_error(Puppet::Error)
+-    end
+-
+-    it "should fail intelligently if a file cannot be removed" do
+-      @searcher.stubs(:data_directory).returns "/my/dir"
+-      @request.stubs(:key).returns "me"
+-
+-      Dir.expects(:glob).with(File.join("/my/dir", "me.*")).returns %w{/one}
+-
+-      File.expects(:unlink).with("/one").raises ArgumentError
+-
+-      proc { @searcher.destroy(@request) }.should raise_error(Puppet::Error)
+-    end
+-  end
+-end
+diff --git a/spec/unit/indirector/terminus_spec.rb b/spec/unit/indirector/terminus_spec.rb
+index 826b934..63cb7cc 100755
+--- a/spec/unit/indirector/terminus_spec.rb
++++ b/spec/unit/indirector/terminus_spec.rb
+@@ -3,7 +3,7 @@
+ require File.dirname(__FILE__) + '/../../spec_helper'
+ require 'puppet/defaults'
+ require 'puppet/indirector'
+-require 'puppet/indirector/file'
++require 'puppet/indirector/memory'
+ 
+ describe Puppet::Indirector::Terminus do
+   before :each do
+@@ -202,14 +202,14 @@ describe Puppet::Indirector::Terminus, " when parsing class constants for indire
+     @subclass.expects(:indirection=).with(:test_ind)
+     @subclass.stubs(:name=)
+     @subclass.stubs(:terminus_type=)
+-    Puppet::Indirector::File.inherited(@subclass)
++    Puppet::Indirector::Memory.inherited(@subclass)
+   end
+ 
+   it "should convert the indirection name to a downcased symbol" do
+     @subclass.expects(:indirection=).with(:test_ind)
+     @subclass.stubs(:name=)
+     @subclass.stubs(:terminus_type=)
+-    Puppet::Indirector::File.inherited(@subclass)
++    Puppet::Indirector::Memory.inherited(@subclass)
+   end
+ 
+   it "should convert camel case to lower case with underscores as word separators" do
+-- 
+1.7.6.4
+

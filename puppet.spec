@@ -6,7 +6,7 @@
 
 Name:           puppet
 Version:        2.6.6
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2
 URL:            http://puppetlabs.com
@@ -20,6 +20,17 @@ Patch1:         0001-4922-Don-t-truncate-remotely-sourced-files-on-404.patch
 Patch2:         0001-5073-Download-plugins-even-if-you-re-filtering-on-ta.patch
 # http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3848
 Patch3:         0001-Resist-directory-traversal-attacks-2.6.x.patch
+# http://projects.puppetlabs.com/issues/9791
+# http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3870
+Patch4:         2.6.x-9791-TOCTOU-in-ssh-auth-keys-type.patch
+# http://projects.puppetlabs.com/issues/9792
+# http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3871
+Patch5:         2.6.x-9792-Predictable-temporary-filename-in-ralsh.patch
+# http://projects.puppetlabs.com/issues/9794
+# http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3869
+Patch6:         2.6.x-9794-k5login-can-overwrite-arbitrary-files-as-root.patch
+# http://projects.puppetlabs.com/issues/9793
+Patch7:         2.6.x-9793-secure-indirector-file-backed-terminus-base-cla.patch
 
 Group:          System Environment/Base
 
@@ -78,6 +89,10 @@ The server can also function as a certificate authority and file server.
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
+%patch4 -p1
+%patch5 -p1
+%patch6 -p1
+%patch7 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
 
@@ -265,6 +280,10 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Thu Sep 29 2011 Todd Zullinger <tmz@pobox.com> - 2.6.6-3
+- Apply upstream patches for CVE-2011-3869, CVE-2011-3870, CVE-2011-3871, and
+  upstream #9793
+
 * Tue Sep 27 2011 Todd Zullinger <tmz@pobox.com> - 2.6.6-2
 - Apply upstream patch for CVE-2011-3848
 

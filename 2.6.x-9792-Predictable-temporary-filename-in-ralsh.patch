@@ -1,0 +1,69 @@
+From 906da37374def334b62722acf84e4b0d1324e1f7 Mon Sep 17 00:00:00 2001
+From: Daniel Pittman <daniel@puppetlabs.com>
+Date: Wed, 28 Sep 2011 23:35:19 -0700
+Subject: [PATCH] (#9792) Predictable temporary filename in ralsh.
+
+When ralsh is used in edit mode the temporary filename is in a shared
+directory, and is absolutely predictable.  Worse, it won't be touched until
+well after the startup of the command.
+
+It can be tricked into writing through a symlink to edit any file on the
+system, or to create through it, but worse - the file is reopened with the
+same name later, so it can have the target replaced between edit and
+operate...
+
+The only possible mitigation comes from the system editor and the behaviour it
+has around editing through symbolic links, which is very weak.
+
+This improves this to prefer the current working directory for the temporary
+file, and to be somewhat less predictable and more safe in conjuring it into
+being.
+
+Signed-off-by: Daniel Pittman <daniel@puppetlabs.com>
+---
+ lib/puppet/application/resource.rb |   27 +++++++++++++++++----------
+ 1 files changed, 17 insertions(+), 10 deletions(-)
+
+diff --git a/lib/puppet/application/resource.rb b/lib/puppet/application/resource.rb
+index bc4faf5..3e4147e 100644
+--- a/lib/puppet/application/resource.rb
++++ b/lib/puppet/application/resource.rb
+@@ -88,18 +88,25 @@ class Puppet::Application::Resource < Puppet::Application
+     end.map(&format).join("\n")
+ 
+     if options[:edit]
+-      file = "/tmp/x2puppet-#{Process.pid}.pp"
++      require 'tempfile'
++      # Prefer the current directory, which is more likely to be secure
++      # and, in the case of interactive use, accessible to the user.
++      tmpfile = Tempfile.new('x2puppet', Dir.pwd)
+       begin
+-        File.open(file, "w") do |f|
+-          f.puts text
+-        end
+-        ENV["EDITOR"] ||= "vi"
+-        system(ENV["EDITOR"], file)
+-        system("puppet -v #{file}")
++        # sync write, so nothing buffers before we invoke the editor.
++        tmpfile.sync = true
++        tmpfile.puts text
++
++        # edit the content
++        system(ENV["EDITOR"] || 'vi', tmpfile.path)
++
++        # ...and, now, pass that file to puppet to apply.  Because
++        # many editors rename or replace the original file we need to
++        # feed the pathname, not the file content itself, to puppet.
++        system('puppet -v ' + tmpfile.path)
+       ensure
+-        #if FileTest.exists? file
+-        #    File.unlink(file)
+-        #end
++        # The temporary file will be safely removed.
++        tmpfile.close(true)
+       end
+     else
+       puts text
+-- 
+1.7.6.4
+
