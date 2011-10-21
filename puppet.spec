@@ -14,6 +14,8 @@ Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.g
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 # https://projects.puppetlabs.com/issues/10244
 Patch0:         0001-10244-Restore-Mongrel-XMLRPC-functionality.patch
+# https://projects.puppetlabs.com/issues/9167
+Patch1:         0001-9167-Do-not-sent-tagmail-reports-if-no-changes.patch
 
 Group:          System Environment/Base
 
@@ -69,6 +71,7 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
+%patch1 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
 %build
@@ -258,6 +261,8 @@ rm -rf %{buildroot}
 * Sun Oct 23 2011 Todd Zullinger <tmz@pobox.com> - 2.6.12-1
 - Update to 2.6.12, fixes CVE-2011-3872
 - Add upstream patch to restore Mongrel XMLRPC functionality (upstream #10244)
+- Apply partial fix for upstream #9167 (tagmail report sends email when nothing
+  happens)
 
 * Thu Sep 29 2011 Todd Zullinger <tmz@pobox.com> - 2.6.6-3
 - Apply upstream patches for CVE-2011-3869, CVE-2011-3870, CVE-2011-3871, and
