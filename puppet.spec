@@ -5,32 +5,15 @@
 %global confdir conf/redhat
 
 Name:           puppet
-Version:        2.6.6
-Release:        3%{?dist}
+Version:        2.6.12
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2
 URL:            http://puppetlabs.com
-Source0:        http://puppetlabs.com/downloads/%{name}/%{name}-%{version}.tar.gz
-Source1:        http://puppetlabs.com/downloads/%{name}/%{name}-%{version}.tar.gz.sign
-# http://projects.puppetlabs.com/issues/5428
-Patch0:         0001-5428-More-fully-stub-Puppet-Resource-Reference-for-u.patch
-# http://projects.puppetlabs.com/issues/4922
-Patch1:         0001-4922-Don-t-truncate-remotely-sourced-files-on-404.patch
-# http://projects.puppetlabs.com/issues/5073
-Patch2:         0001-5073-Download-plugins-even-if-you-re-filtering-on-ta.patch
-# http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3848
-Patch3:         0001-Resist-directory-traversal-attacks-2.6.x.patch
-# http://projects.puppetlabs.com/issues/9791
-# http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3870
-Patch4:         2.6.x-9791-TOCTOU-in-ssh-auth-keys-type.patch
-# http://projects.puppetlabs.com/issues/9792
-# http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3871
-Patch5:         2.6.x-9792-Predictable-temporary-filename-in-ralsh.patch
-# http://projects.puppetlabs.com/issues/9794
-# http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3869
-Patch6:         2.6.x-9794-k5login-can-overwrite-arbitrary-files-as-root.patch
-# http://projects.puppetlabs.com/issues/9793
-Patch7:         2.6.x-9793-secure-indirector-file-backed-terminus-base-cla.patch
+Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz
+Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
+# https://projects.puppetlabs.com/issues/10244
+Patch0:         0001-10244-Restore-Mongrel-XMLRPC-functionality.patch
 
 Group:          System Environment/Base
 
@@ -86,15 +69,7 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
-%patch7 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
-
 
 %build
 # Fix some rpmlint complaints
@@ -163,7 +138,7 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 
 %files
 %defattr(-, root, root, 0755)
-%doc CHANGELOG COPYING LICENSE README README.queueing examples
+%doc CHANGELOG COPYING LICENSE README.md README.queueing examples
 %{_bindir}/pi
 %{_bindir}/puppet
 %{_bindir}/ralsh
@@ -280,6 +255,10 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Sun Oct 23 2011 Todd Zullinger <tmz@pobox.com> - 2.6.12-1
+- Update to 2.6.12, fixes CVE-2011-3872
+- Add upstream patch to restore Mongrel XMLRPC functionality (upstream #10244)
+
 * Thu Sep 29 2011 Todd Zullinger <tmz@pobox.com> - 2.6.6-3
 - Apply upstream patches for CVE-2011-3869, CVE-2011-3870, CVE-2011-3871, and
   upstream #9793
