@@ -5,17 +5,15 @@
 %global confdir conf/redhat
 
 Name:           puppet
-Version:        2.6.12
+Version:        2.6.13
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2
 URL:            http://puppetlabs.com
 Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
-# https://projects.puppetlabs.com/issues/10244
-Patch0:         0001-10244-Restore-Mongrel-XMLRPC-functionality.patch
 # https://projects.puppetlabs.com/issues/9167
-Patch1:         0001-9167-Do-not-sent-tagmail-reports-if-no-changes.patch
+Patch0:         0001-9167-Do-not-sent-tagmail-reports-if-no-changes.patch
 
 Group:          System Environment/Base
 
@@ -71,7 +69,6 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
-%patch1 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
 %build
@@ -258,6 +255,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Wed Dec 14 2011 Todd Zullinger <tmz@pobox.com> - 2.6.13-1
+- Update to 2.6.13
+
 * Sun Oct 23 2011 Todd Zullinger <tmz@pobox.com> - 2.6.12-1
 - Update to 2.6.12, fixes CVE-2011-3872
 - Add upstream patch to restore Mongrel XMLRPC functionality (upstream #10244)
