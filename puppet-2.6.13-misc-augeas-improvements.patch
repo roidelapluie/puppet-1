@@ -1,0 +1,490 @@
+From 0614d2293dff0fabd0e9674d3113b050373491a6 Mon Sep 17 00:00:00 2001
+From: Michael Knox <mike@sysam.com.au>
+Date: Fri, 18 Mar 2011 22:37:00 +1100
+Subject: [PATCH/puppet 1/3] (#2728) Add diff output for changes made by
+ Augeas provider
+
+Utilising Augeas's SAVE_NEWFILE mode (similar to augtool -n) to
+determine the changes that will be made be made by Augeas.
+Output a unified diff to info
+
+handle non-default root, and multiple files correctly
+
+Adding tests for Augeas diff functionality
+Add test for non-default :root when diff'ing
+Ensure that multiple files are diffed if changed, not just one
+
+Signed-off-by: Josh Cooper <josh@puppetlabs.com>
+Reviewed-by: Jacob Helwig <jacob@puppetlabs.com>
+
+Conflicts:
+
+	spec/unit/provider/augeas/augeas_spec.rb
+
+Merged-to-2.6.x-by: Todd Zullinger <tmz@pobox.com>
+---
+ lib/puppet/provider/augeas/augeas.rb     |   59 ++++++++++----
+ spec/unit/provider/augeas/augeas_spec.rb |  131 +++++++++++++++++++++++++++++-
+ 2 files changed, 172 insertions(+), 18 deletions(-)
+
+diff --git a/lib/puppet/provider/augeas/augeas.rb b/lib/puppet/provider/augeas/augeas.rb
+index 7dbd062..1ddb886 100644
+--- a/lib/puppet/provider/augeas/augeas.rb
++++ b/lib/puppet/provider/augeas/augeas.rb
+@@ -19,9 +19,12 @@
+ 
+ require 'augeas' if Puppet.features.augeas?
+ require 'strscan'
++require 'puppet/util'
++require 'puppet/util/diff'
+ 
+ Puppet::Type.type(:augeas).provide(:augeas) do
+   include Puppet::Util
++  include Puppet::Util::Diff
+ 
+   confine :true => Puppet.features.augeas?
+ 
+@@ -29,6 +32,8 @@ Puppet::Type.type(:augeas).provide(:augeas) do
+ 
+   SAVE_NOOP = "noop"
+   SAVE_OVERWRITE = "overwrite"
++  SAVE_NEWFILE = "newfile"
++  SAVE_BACKUP = "backup"
+ 
+   COMMANDS = {
+     "set" => [ :path, :string ],
+@@ -248,11 +253,6 @@ Puppet::Type.type(:augeas).provide(:augeas) do
+     @aug.set("/augeas/save", mode)
+   end
+ 
+-  def files_changed?
+-    saved_files = @aug.match("/augeas/events/saved")
+-    saved_files.size > 0
+-  end
+-
+   # Determines if augeas acutally needs to run.
+   def need_to_run?
+     force = resource[:force]
+@@ -281,20 +281,33 @@ Puppet::Type.type(:augeas).provide(:augeas) do
+         # actually do the save.
+         if return_value and get_augeas_version >= "0.3.6"
+           debug("Will attempt to save and only run if files changed")
+-          set_augeas_save_mode(SAVE_NOOP)
++          set_augeas_save_mode(SAVE_NEWFILE)
+           do_execute_changes
+           save_result = @aug.save
+           saved_files = @aug.match("/augeas/events/saved")
+-          if save_result and not files_changed?
+-            debug("Skipping because no files were changed")
+-            return_value = false
+-          else
++          if save_result and saved_files.size > 0
++            root = resource[:root].sub(/^\/$/, "")
++            saved_files.each do |key|
++              saved_file = @aug.get(key).to_s.sub(/^\/files/, root)
++              if Puppet[:show_diff]
++                print diff(saved_file, saved_file + ".augnew")
++              end
++              if resource.noop?
++                File.delete(saved_file + ".augnew")
++              end
++            end
+             debug("Files changed, should execute")
++            return_value = true
++          else
++            debug("Skipping because no files were changed or save failed")
++            return_value = false
+           end
+         end
+       end
+     ensure
+-      close_augeas
++      if not return_value or resource.noop?
++        close_augeas
++      end
+     end
+     return_value
+   end
+@@ -303,12 +316,24 @@ Puppet::Type.type(:augeas).provide(:augeas) do
+     # Re-connect to augeas, and re-execute the changes
+     begin
+       open_augeas
+-      set_augeas_save_mode(SAVE_OVERWRITE) if get_augeas_version >= "0.3.6"
+-
+-      do_execute_changes
+-
+-      success = @aug.save
+-      fail("Save failed with return code #{success}") if success != true
++      saved_files = @aug.match("/augeas/events/saved")
++      if saved_files
++        saved_files.each do |key|
++          root = resource[:root].sub(/^\/$/, "")
++          saved_file = @aug.get(key).to_s.sub(/^\/files/, root)
++          if File.exists?(saved_file + ".augnew")
++            success = File.rename(saved_file + ".augnew", saved_file)
++            debug(saved_file + ".augnew moved to " + saved_file)
++            fail("Rename failed with return code #{success}") if success != 0
++          end
++        end
++      else
++        debug("No saved files, re-executing augeas")
++        set_augeas_save_mode(SAVE_OVERWRITE) if get_augeas_version >= "0.3.6"
++        do_execute_changes
++        success = @aug.save
++        fail("Save failed with return code #{success}") if success != true
++      end
+     ensure
+       close_augeas
+     end
+diff --git a/spec/unit/provider/augeas/augeas_spec.rb b/spec/unit/provider/augeas/augeas_spec.rb
+index 07b6320..764362f 100644
+--- a/spec/unit/provider/augeas/augeas_spec.rb
++++ b/spec/unit/provider/augeas/augeas_spec.rb
+@@ -5,7 +5,6 @@ require File.dirname(__FILE__) + '/../../../spec_helper'
+ provider_class = Puppet::Type.type(:augeas).provider(:augeas)
+ 
+ describe provider_class do
+-
+   describe "command parsing" do
+     before do
+       @resource = stub("resource")
+@@ -253,6 +252,7 @@ describe provider_class do
+     it "should handle no filters" do
+       resource = stub("resource")
+       resource.stubs(:[]).returns(false).then.returns("").then.returns("")
++      resource.stubs(:noop?).returns(false)
+       augeas_stub = stub("augeas", :match => ["set", "of", "values"])
+       augeas_stub.stubs("close")
+       provider = provider_class.new(resource)
+@@ -264,6 +264,7 @@ describe provider_class do
+     it "should return true when a get filter matches" do
+       resource = stub("resource")
+       resource.stubs(:[]).returns(false).then.returns("get path == value").then.returns("")
++      resource.stubs(:noop?).returns(false)
+       provider = provider_class.new(resource)
+       augeas_stub = stub("augeas", :get => "value")
+       augeas_stub.stubs("close")
+@@ -286,6 +287,7 @@ describe provider_class do
+     it "should return true when a match filter matches" do
+       resource = stub("resource")
+       resource.stubs(:[]).returns(false).then.returns("match path size == 3").then.returns("")
++      resource.stubs(:noop?).returns(false)
+       provider = provider_class.new(resource)
+       augeas_stub = stub("augeas", :match => ["set", "of", "values"])
+       augeas_stub.stubs("close")
+@@ -316,6 +318,132 @@ describe provider_class do
+       provider.stubs(:get_augeas_version).returns("0.3.5")
+       provider.need_to_run?.should == false
+     end
++
++    #Ticket 5211 testing
++    it "should return true when a size != the provided value" do
++      resource = stub("resource")
++      resource.stubs(:[]).returns(false).then.returns("match path size != 17").then.returns("")
++      resource.stubs(:noop?).returns(false)
++      provider = provider_class.new(resource)
++      augeas_stub = stub("augeas", :match => ["set", "of", "values"])
++      augeas_stub.stubs("close")
++      provider.aug= augeas_stub
++      provider.stubs(:get_augeas_version).returns("0.3.5")
++      provider.need_to_run?.should == true
++    end
++
++    #Ticket 5211 testing
++    it "should return false when a size doeas equal the provided value" do
++      resource = stub("resource")
++      resource.stubs(:[]).returns(false).then.returns("match path size != 3").then.returns("")
++      provider = provider_class.new(resource)
++      augeas_stub = stub("augeas", :match => ["set", "of", "values"])
++      augeas_stub.stubs("close")
++      provider.aug= augeas_stub
++      provider.stubs(:get_augeas_version).returns("0.3.5")
++      provider.need_to_run?.should == false
++    end
++
++    # Ticket 2728 (diff files)
++    describe "and Puppet[:show_diff] is set" do
++      before do
++        Puppet[:show_diff] = true
++
++        @resource = Puppet::Type.type(:augeas).new(:name => "test")
++        @provider = provider_class.new(@resource)
++        @augeas_stub = stub("augeas")
++        @provider.aug = @augeas_stub
++
++        @augeas_stub.stubs("get").with("/augeas/version").returns("0.7.2")
++        @augeas_stub.stubs(:set).returns(true)
++        @augeas_stub.stubs(:save).returns(true)
++      end
++
++      it "should call diff when a file is shown to have been changed" do
++        file = "/etc/hosts"
++
++        @resource[:context] = "/files"
++        @resource[:changes] = ["set #{file}/foo bar"]
++
++        @augeas_stub.stubs(:match).with("/augeas/events/saved").returns(["/augeas/events/saved"])
++        @augeas_stub.stubs(:get).with("/augeas/events/saved").returns(["/files#{file}"])
++        @augeas_stub.expects(:set).with("/augeas/save", "newfile")
++        @augeas_stub.expects(:close).never()
++
++        @provider.expects("diff").with("#{file}", "#{file}.augnew").returns("")
++        @provider.should be_need_to_run
++      end
++
++      it "should call diff for each file thats changed" do
++        file1 = "/etc/hosts"
++        file2 = "/etc/resolv.conf"
++
++        @resource[:context] = "/files"
++        @resource[:changes] = ["set #{file1}/foo bar", "set #{file2}/baz biz"]
++
++        @augeas_stub.stubs(:match).with("/augeas/events/saved").returns(["/augeas/events/saved[1]", "/augeas/events/saved[2]"])
++        @augeas_stub.stubs(:get).with("/augeas/events/saved[1]").returns(["/files#{file1}"])
++        @augeas_stub.stubs(:get).with("/augeas/events/saved[2]").returns(["/files#{file2}"])
++        @augeas_stub.expects(:set).with("/augeas/save", "newfile")
++        @augeas_stub.expects(:close).never()
++
++        @provider.expects(:diff).with("#{file1}", "#{file1}.augnew").returns("")
++        @provider.expects(:diff).with("#{file2}", "#{file2}.augnew").returns("")
++        @provider.should be_need_to_run
++      end
++
++      describe "and resource[:root] is set" do
++        it "should call diff when a file is shown to have been changed" do
++          root = "/tmp/foo"
++          file = "/etc/hosts"
++
++          @resource[:context] = "/files"
++          @resource[:changes] = ["set #{file}/foo bar"]
++          @resource[:root] = root
++
++          @augeas_stub.stubs(:match).with("/augeas/events/saved").returns(["/augeas/events/saved"])
++          @augeas_stub.stubs(:get).with("/augeas/events/saved").returns(["/files#{file}"])
++          @augeas_stub.expects(:set).with("/augeas/save", "newfile")
++          @augeas_stub.expects(:close).never()
++
++          @provider.expects(:diff).with("#{root}#{file}", "#{root}#{file}.augnew").returns("")
++          @provider.should be_need_to_run
++        end
++      end
++
++      it "should not call diff if no files change" do
++        file = "/etc/hosts"
++
++        @resource[:context] = "/files"
++        @resource[:changes] = ["set #{file}/foo bar"]
++
++        @augeas_stub.stubs(:match).with("/augeas/events/saved").returns([])
++        @augeas_stub.expects(:set).with("/augeas/save", "newfile")
++        @augeas_stub.expects(:get).with("/augeas/events/saved").never()
++        @augeas_stub.expects(:close)
++
++        @provider.expects(:diff).never()
++        @provider.should_not be_need_to_run
++      end
++
++      it "should cleanup when in noop mode" do
++        file = "/etc/hosts"
++
++        @resource[:noop] = true
++        @resource[:context] = "/files"
++        @resource[:changes] = ["set #{file}/foo bar"]
++
++        @augeas_stub.stubs(:match).with("/augeas/events/saved").returns(["/augeas/events/saved"])
++        @augeas_stub.stubs(:get).with("/augeas/events/saved").returns(["/files#{file}"])
++        @augeas_stub.expects(:set).with("/augeas/save", "newfile")
++        @augeas_stub.expects(:close)
++
++        File.expects(:delete).with(file + ".augnew")
++
++        @provider.expects(:diff).with("#{file}", "#{file}.augnew").returns("")
++        @provider.should be_need_to_run
++      end
++    end
+   end
+ 
+   describe "augeas execution integration" do
+@@ -326,6 +454,7 @@ describe provider_class do
+       @augeas = stub("augeas")
+       @provider.aug= @augeas
+       @provider.stubs(:get_augeas_version).returns("0.3.5")
++      @augeas.stubs(:match).with("/augeas/events/saved")
+     end
+ 
+     it "should handle set commands" do
+-- 
+1.7.6
+
+
+From 7fca361f2c936f3b8db72b19a2e81b2dada0c0bf Mon Sep 17 00:00:00 2001
+From: Daniel Pittman <daniel@puppetlabs.com>
+Date: Fri, 9 Sep 2011 14:06:19 -0700
+Subject: [PATCH/puppet 2/3] (#2744) Display file diffs through the Puppet log
+ system.
+
+When Puppet generated a diff between the file on disk, it previously just
+printed it directly.  This means that the user can view it, but it is lost in
+the rest of the system - monitoring, logs, and reports have no visibility of
+this.
+
+Better, then, to send it through our regular logging system, so that the
+content is visible in all the places that it might be viewed by the user or
+monitored by machines.
+
+Signed-off-by: Daniel Pittman <daniel@puppetlabs.com>
+---
+ lib/puppet/provider/augeas/augeas.rb |    2 +-
+ lib/puppet/type/file/content.rb      |    2 +-
+ lib/puppet/util/diff.rb              |    2 +-
+ spec/unit/type/file/content_spec.rb  |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/lib/puppet/provider/augeas/augeas.rb b/lib/puppet/provider/augeas/augeas.rb
+index 1ddb886..82410c4 100644
+--- a/lib/puppet/provider/augeas/augeas.rb
++++ b/lib/puppet/provider/augeas/augeas.rb
+@@ -290,7 +290,7 @@ Puppet::Type.type(:augeas).provide(:augeas) do
+             saved_files.each do |key|
+               saved_file = @aug.get(key).to_s.sub(/^\/files/, root)
+               if Puppet[:show_diff]
+-                print diff(saved_file, saved_file + ".augnew")
++                notice "\n" + diff(saved_file, saved_file + ".augnew")
+               end
+               if resource.noop?
+                 File.delete(saved_file + ".augnew")
+diff --git a/lib/puppet/type/file/content.rb b/lib/puppet/type/file/content.rb
+index 8271832..dd402cc 100755
+--- a/lib/puppet/type/file/content.rb
++++ b/lib/puppet/type/file/content.rb
+@@ -100,7 +100,7 @@ module Puppet
+ 
+       if ! result and Puppet[:show_diff]
+         write_temporarily do |path|
+-          print diff(@resource[:path], path)
++          notice "\n" + diff(@resource[:path], path)
+         end
+       end
+       result
+diff --git a/lib/puppet/util/diff.rb b/lib/puppet/util/diff.rb
+index 73e1bc0..131241b 100644
+--- a/lib/puppet/util/diff.rb
++++ b/lib/puppet/util/diff.rb
+@@ -67,7 +67,7 @@ module Puppet::Util::Diff
+     tempfile.open
+     tempfile.print string
+     tempfile.close
+-    print diff(path, tempfile.path)
++    notice "\n" + diff(path, tempfile.path)
+     tempfile.delete
+   end
+ end
+diff --git a/spec/unit/type/file/content_spec.rb b/spec/unit/type/file/content_spec.rb
+index bd2b2ad..9de4550 100755
+--- a/spec/unit/type/file/content_spec.rb
++++ b/spec/unit/type/file/content_spec.rb
+@@ -179,7 +179,7 @@ describe content do
+         it "should display a diff if the current contents are different from the desired content" do
+           @content.should = "some content"
+           @content.expects(:diff).returns("my diff").once
+-          @content.expects(:print).with("my diff").once
++          @content.expects(:notice).with("\nmy diff").once
+ 
+           @content.safe_insync?("other content")
+         end
+-- 
+1.7.6
+
+
+From 61d5ae176079784b5a0bccf9b999fb4c3193369b Mon Sep 17 00:00:00 2001
+From: Josh Cooper <josh@puppetlabs.com>
+Date: Fri, 30 Dec 2011 10:28:16 -0800
+Subject: [PATCH/puppet 3/3] Merge branch 'tickets/2.7.x/11414' of
+ https://github.com/domcleal/puppet into 2.7.x
+
+* 'tickets/2.7.x/11414' of https://github.com/domcleal/puppet:
+  (#11414) Test Augeas versions correctly with versioncmp
+  (#11414) Save/execute changes on versions of Augeas < 0.3.6
+---
+ lib/puppet/provider/augeas/augeas.rb     |   10 ++++++----
+ spec/unit/provider/augeas/augeas_spec.rb |    4 ++--
+ 2 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/lib/puppet/provider/augeas/augeas.rb b/lib/puppet/provider/augeas/augeas.rb
+index 82410c4..8785c78 100644
+--- a/lib/puppet/provider/augeas/augeas.rb
++++ b/lib/puppet/provider/augeas/augeas.rb
+@@ -21,10 +21,12 @@ require 'augeas' if Puppet.features.augeas?
+ require 'strscan'
+ require 'puppet/util'
+ require 'puppet/util/diff'
++require 'puppet/util/package'
+ 
+ Puppet::Type.type(:augeas).provide(:augeas) do
+   include Puppet::Util
+   include Puppet::Util::Diff
++  include Puppet::Util::Package
+ 
+   confine :true => Puppet.features.augeas?
+ 
+@@ -148,7 +150,7 @@ Puppet::Type.type(:augeas).provide(:augeas) do
+       debug("Opening augeas with root #{root}, lens path #{load_path}, flags #{flags}")
+       @aug = Augeas::open(root, load_path,flags)
+ 
+-      debug("Augeas version #{get_augeas_version} is installed") if get_augeas_version >= "0.3.6"
++      debug("Augeas version #{get_augeas_version} is installed") if versioncmp(get_augeas_version, "0.3.6") >= 0
+ 
+       if resource[:incl]
+         aug.set("/augeas/load/Xfm/lens", resource[:lens])
+@@ -279,7 +281,7 @@ Puppet::Type.type(:augeas).provide(:augeas) do
+         # If we have a verison of augeas which is at least 0.3.6 then we
+         # can make the changes now, see if changes were made, and
+         # actually do the save.
+-        if return_value and get_augeas_version >= "0.3.6"
++        if return_value and versioncmp(get_augeas_version, "0.3.6") >= 0
+           debug("Will attempt to save and only run if files changed")
+           set_augeas_save_mode(SAVE_NEWFILE)
+           do_execute_changes
+@@ -317,7 +319,7 @@ Puppet::Type.type(:augeas).provide(:augeas) do
+     begin
+       open_augeas
+       saved_files = @aug.match("/augeas/events/saved")
+-      if saved_files
++      unless saved_files.empty?
+         saved_files.each do |key|
+           root = resource[:root].sub(/^\/$/, "")
+           saved_file = @aug.get(key).to_s.sub(/^\/files/, root)
+@@ -329,7 +331,7 @@ Puppet::Type.type(:augeas).provide(:augeas) do
+         end
+       else
+         debug("No saved files, re-executing augeas")
+-        set_augeas_save_mode(SAVE_OVERWRITE) if get_augeas_version >= "0.3.6"
++        set_augeas_save_mode(SAVE_OVERWRITE) if versioncmp(get_augeas_version, "0.3.6") >= 0
+         do_execute_changes
+         success = @aug.save
+         fail("Save failed with return code #{success}") if success != true
+diff --git a/spec/unit/provider/augeas/augeas_spec.rb b/spec/unit/provider/augeas/augeas_spec.rb
+index 764362f..c9d5f06 100644
+--- a/spec/unit/provider/augeas/augeas_spec.rb
++++ b/spec/unit/provider/augeas/augeas_spec.rb
+@@ -354,7 +354,7 @@ describe provider_class do
+         @augeas_stub = stub("augeas")
+         @provider.aug = @augeas_stub
+ 
+-        @augeas_stub.stubs("get").with("/augeas/version").returns("0.7.2")
++        @augeas_stub.stubs("get").with("/augeas/version").returns("0.10.0")
+         @augeas_stub.stubs(:set).returns(true)
+         @augeas_stub.stubs(:save).returns(true)
+       end
+@@ -454,7 +454,7 @@ describe provider_class do
+       @augeas = stub("augeas")
+       @provider.aug= @augeas
+       @provider.stubs(:get_augeas_version).returns("0.3.5")
+-      @augeas.stubs(:match).with("/augeas/events/saved")
++      @augeas.stubs(:match).with("/augeas/events/saved").returns([])
+     end
+ 
+     it "should handle set commands" do
+-- 
+1.7.6
+

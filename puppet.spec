@@ -14,6 +14,14 @@ Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.g
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 # https://projects.puppetlabs.com/issues/9167
 Patch0:         0001-9167-Do-not-sent-tagmail-reports-if-no-changes.patch
+# Various augeas improvements from 2.7.x, mostly needed to fix bz#771097
+# (upstream #11414)
+# http://projects.puppetlabs.com/issues/2728
+# http://projects.puppetlabs.com/issues/2744
+# http://projects.puppetlabs.com/issues/8808
+# http://projects.puppetlabs.com/issues/11414
+# https://bugzilla.redhat.com/771097
+Patch1:         puppet-2.6.13-misc-augeas-improvements.patch
 
 Group:          System Environment/Base
 
@@ -69,6 +77,7 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
+%patch1 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
 %build
@@ -257,6 +266,7 @@ rm -rf %{buildroot}
 %changelog
 * Wed Dec 14 2011 Todd Zullinger <tmz@pobox.com> - 2.6.13-1
 - Update to 2.6.13
+- Cherry-pick various augeas fixes from upstream (bz#771097)
 
 * Sun Oct 23 2011 Todd Zullinger <tmz@pobox.com> - 2.6.12-1
 - Update to 2.6.12, fixes CVE-2011-3872
