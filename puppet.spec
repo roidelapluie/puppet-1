@@ -6,7 +6,7 @@
 
 Name:           puppet
 Version:        2.6.13
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2
 URL:            http://puppetlabs.com
@@ -14,14 +14,9 @@ Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.g
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 # https://projects.puppetlabs.com/issues/9167
 Patch0:         0001-9167-Do-not-sent-tagmail-reports-if-no-changes.patch
-# Various augeas improvements from 2.7.x, mostly needed to fix bz#771097
-# (upstream #11414)
-# http://projects.puppetlabs.com/issues/2728
-# http://projects.puppetlabs.com/issues/2744
-# http://projects.puppetlabs.com/issues/8808
 # http://projects.puppetlabs.com/issues/11414
 # https://bugzilla.redhat.com/771097
-Patch1:         puppet-2.6.13-misc-augeas-improvements.patch
+Patch1:         puppet-2.6.13-augeas-0.10.patch
 
 Group:          System Environment/Base
 
@@ -264,6 +259,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Thu Jan 05 2012 Todd Zullinger <tmz@pobox.com> - 2.6.13-2
+- Revert to minimal patch for augeas >= 0.10 (bz#771097)
+
 * Wed Dec 14 2011 Todd Zullinger <tmz@pobox.com> - 2.6.13-1
 - Update to 2.6.13
 - Cherry-pick various augeas fixes from upstream (bz#771097)
