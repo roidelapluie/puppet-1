@@ -1,8 +1,15 @@
 # Augeas and SELinux requirements may be disabled at build time by passing
 # --without augeas and/or --without selinux to rpmbuild or mock
 
-%{!?ruby_sitelibdir: %global ruby_sitelibdir %(ruby -rrbconfig -e 'puts Config::CONFIG["sitelibdir"]')}
-%global confdir conf/redhat
+# F-17 and above have ruby-1.9.x, and place libs in a different location
+%if 0%{?fedora} >= 17
+%global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["vendorlibdir"]')
+%else
+%global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["sitelibdir"]')
+%endif
+
+%global confdir         conf/redhat
+%global ruby_version    %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["ruby_version"]')
 
 Name:           puppet
 Version:        2.6.13
@@ -27,7 +34,10 @@ BuildRequires:  ruby >= 1.8.5
 
 %if 0%{?fedora} || 0%{?rhel} >= 5
 BuildArch:      noarch
-Requires:       ruby(abi) = 1.8
+# Work around the lack of ruby in the default mock buildroot
+%if "%{ruby_version}"
+Requires:       ruby(abi) = %{ruby_version}
+%endif
 Requires:       ruby-shadow
 %endif
 
@@ -41,7 +51,9 @@ Requires:       ruby-shadow
 %endif
 
 Requires:       facter >= 1.5
+%if "%{ruby_version}" == "1.8"
 Requires:       ruby >= 1.8.5
+%endif
 %{!?_without_augeas:Requires: ruby-augeas}
 
 Requires(pre):  shadow-utils
@@ -99,7 +111,7 @@ mv conf/puppet-queue.conf examples/etc/puppet/
 
 %install
 rm -rf %{buildroot}
-ruby install.rb --destdir=%{buildroot} --quick --no-rdoc
+ruby install.rb --destdir=%{buildroot} --quick --no-rdoc --sitelibdir=%{puppet_libdir}
 
 install -d -m0755 %{buildroot}%{_sysconfdir}/puppet/manifests
 install -d -m0755 %{buildroot}%{_datadir}/%{name}/modules
@@ -154,7 +166,7 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 %{_bindir}/puppetdoc
 %{_sbindir}/puppetca
 %{_sbindir}/puppetd
-%{ruby_sitelibdir}/*
+%{puppet_libdir}/*
 %{_initrddir}/puppet
 %dir %{_sysconfdir}/puppet
 %if 0%{?fedora} >= 15
@@ -266,6 +278,7 @@ rm -rf %{buildroot}
 * Mon Feb 13 2012 Todd Zullinger <tmz@pobox.com> - 2.6.13-3
 - Move rpmlint fixes to %%prep, add a few additional fixes
 - Bump minimum ruby version to 1.8.5 now that EL-4 is all but dead
+- Update install locations for Fedora-17 / Ruby-1.9
 
 * Thu Jan 05 2012 Todd Zullinger <tmz@pobox.com> - 2.6.13-2
 - Revert to minimal patch for augeas >= 0.10 (bz#771097)
