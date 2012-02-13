@@ -23,7 +23,7 @@ Group:          System Environment/Base
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  facter >= 1.5
-BuildRequires:  ruby >= 1.8.1
+BuildRequires:  ruby >= 1.8.5
 
 %if 0%{?fedora} || 0%{?rhel} >= 5
 BuildArch:      noarch
@@ -41,7 +41,7 @@ Requires:       ruby-shadow
 %endif
 
 Requires:       facter >= 1.5
-Requires:       ruby >= 1.8.1
+Requires:       ruby >= 1.8.5
 %{!?_without_augeas:Requires: ruby-augeas}
 
 Requires(pre):  shadow-utils
@@ -265,6 +265,7 @@ rm -rf %{buildroot}
 %changelog
 * Mon Feb 13 2012 Todd Zullinger <tmz@pobox.com> - 2.6.13-3
 - Move rpmlint fixes to %%prep, add a few additional fixes
+- Bump minimum ruby version to 1.8.5 now that EL-4 is all but dead
 
 * Thu Jan 05 2012 Todd Zullinger <tmz@pobox.com> - 2.6.13-2
 - Revert to minimal patch for augeas >= 0.10 (bz#771097)
