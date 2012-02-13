@@ -6,7 +6,7 @@
 
 Name:           puppet
 Version:        2.6.13
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2
 URL:            http://puppetlabs.com
@@ -75,23 +75,27 @@ The server can also function as a certificate authority and file server.
 %patch1 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
-%build
 # Fix some rpmlint complaints
+sed -i '/^#!\/usr\/bin\/env ruby/,/^$/d' lib/puppet/util/command_line/*
 for f in mac_dscl.pp mac_dscl_revert.pp \
          mac_pkgdmg.pp ; do
-  sed -i -e'1d' examples/$f
-  chmod a-x examples/$f
+    sed -i -e'1d' examples/$f
+    chmod a-x examples/$f
 done
 for f in external/nagios.rb network/http_server/mongrel.rb relationship.rb; do
-  sed -i -e '1d' lib/puppet/$f
+    sed -i -e '1d' lib/puppet/$f
 done
-chmod +x ext/puppetstoredconfigclean.rb
+chmod +x ext/puppet-load.rb ext/puppetstoredconfigclean.rb \
+    ext/regexp_nodes/regexp_nodes.rb
 
 find examples/ -type f -empty | xargs rm
 find examples/ -type f | xargs chmod a-x
 
 # puppet-queue.conf is more of an example, used for stompserver
 mv conf/puppet-queue.conf examples/etc/puppet/
+
+%build
+# Nothing to build
 
 %install
 rm -rf %{buildroot}
@@ -259,6 +263,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Mon Feb 13 2012 Todd Zullinger <tmz@pobox.com> - 2.6.13-3
+- Move rpmlint fixes to %%prep, add a few additional fixes
+
 * Thu Jan 05 2012 Todd Zullinger <tmz@pobox.com> - 2.6.13-2
 - Revert to minimal patch for augeas >= 0.10 (bz#771097)
 
