@@ -225,6 +225,7 @@ exit 0
 
 %post
 /sbin/chkconfig --add puppet || :
+%if 0%{?rhel}
 if [ "$1" -ge 1 ]; then
   # The pidfile changed from 0.25.x to 2.6.x, handle upgrades without leaving
   # the old process running.
@@ -235,9 +236,11 @@ if [ "$1" -ge 1 ]; then
       /sbin/service puppet start) >/dev/null 2>&1 || :
   fi
 fi
+%endif
 
 %post server
 /sbin/chkconfig --add puppetmaster || :
+%if 0%{?rhel}
 if [ "$1" -ge 1 ]; then
   # The pidfile changed from 0.25.x to 2.6.x, handle upgrades without leaving
   # the old process running.
@@ -248,6 +251,7 @@ if [ "$1" -ge 1 ]; then
       /sbin/service puppetmaster start) >/dev/null 2>&1 || :
   fi
 fi
+%endif
 
 %preun
 if [ "$1" = 0 ] ; then
@@ -280,6 +284,7 @@ rm -rf %{buildroot}
 - Bump minimum ruby version to 1.8.5 now that EL-4 is all but dead
 - Update install locations for Fedora-17 / Ruby-1.9
 - Use ruby($lib) for augeas and shadow requirements
+- Only try to run 0.25.x -> 2.6.x pid file updates on EL
 
 * Thu Jan 05 2012 Todd Zullinger <tmz@pobox.com> - 2.6.13-2
 - Revert to minimal patch for augeas >= 0.10 (bz#771097)
