@@ -12,8 +12,8 @@
 %global ruby_version    %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["ruby_version"]')
 
 Name:           puppet
-Version:        2.6.13
-Release:        3%{?dist}
+Version:        2.6.14
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        GPLv2
 URL:            http://puppetlabs.com
@@ -279,6 +279,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Wed Feb 22 2012 Todd Zullinger <tmz@pobox.com> - 2.6.14-1
+- Update to 2.6.14, fixes CVE-2012-1053 and CVE-2012-1054
+
 * Mon Feb 13 2012 Todd Zullinger <tmz@pobox.com> - 2.6.13-3
 - Move rpmlint fixes to %%prep, add a few additional fixes
 - Bump minimum ruby version to 1.8.5 now that EL-4 is all but dead
