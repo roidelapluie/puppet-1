@@ -185,7 +185,7 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 # These need to be owned by puppet so the server can
 # write to them
 %attr(-, puppet, puppet) %{_localstatedir}/run/puppet
-%attr(-, puppet, puppet) %{_localstatedir}/log/puppet
+%attr(0750, puppet, puppet) %{_localstatedir}/log/puppet
 %attr(-, puppet, puppet) %{_localstatedir}/lib/puppet
 %{_mandir}/man5/puppet.conf.5.gz
 %{_mandir}/man8/pi.8.gz
@@ -281,6 +281,7 @@ rm -rf %{buildroot}
 %changelog
 * Wed Apr 11 2012 Todd Zullinger <tmz@pobox.com> - 2.6.16-1
 - Update to 2.6.16, fixes CVE-2012-1986, CVE-2012-1987, and CVE-2012-1988
+- Correct permissions of /var/log/puppet (0750)
 
 * Wed Feb 22 2012 Todd Zullinger <tmz@pobox.com> - 2.6.14-1
 - Update to 2.6.14, fixes CVE-2012-1053 and CVE-2012-1054
