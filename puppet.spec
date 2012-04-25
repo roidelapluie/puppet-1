@@ -22,6 +22,9 @@ Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.g
 Source2:        puppetstoredconfigclean.rb
 # https://projects.puppetlabs.com/issues/9167
 Patch0:         0001-9167-Do-not-sent-tagmail-reports-if-no-changes.patch
+# http://projects.puppetlabs.com/issues/11325
+# https://github.com/puppetlabs/puppet/commit/a71208ba
+Patch1:         0001-Ruby-1.9.3-has-a-different-error-when-require-fails.patch
 
 Group:          System Environment/Base
 
@@ -82,6 +85,7 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
+%patch1 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
 # Fix some rpmlint complaints
@@ -279,6 +283,7 @@ rm -rf %{buildroot}
 - Change license from GPLv2 to ASL 2.0
 - Drop %%post hacks to deal with upgrades from 0.25
 - Minor rpmlint fixes
+- Backport patch to silence confine warnings in ruby-1.9.3
 
 * Wed Apr 11 2012 Todd Zullinger <tmz@pobox.com> - 2.6.16-1
 - Update to 2.6.16, fixes CVE-2012-1986, CVE-2012-1987, and CVE-2012-1988
