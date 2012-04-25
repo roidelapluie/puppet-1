@@ -140,7 +140,7 @@ ln -svf puppet-doc.8.gz puppetdoc.8.gz
 ln -svf puppet-resource.8.gz ralsh.8.gz
 popd >/dev/null
 
-# Install the ext/ directory to %{_datadir}/%{name}
+# Install the ext/ directory to %%{_datadir}/%%{name}
 install -d %{buildroot}%{_datadir}/%{name}
 cp -a ext/ %{buildroot}%{_datadir}/%{name}
 # emacs and vim bits are installed elsewhere
@@ -278,6 +278,7 @@ rm -rf %{buildroot}
 - Update to 2.7.13
 - Change license from GPLv2 to ASL 2.0
 - Drop %%post hacks to deal with upgrades from 0.25
+- Minor rpmlint fixes
 
 * Wed Apr 11 2012 Todd Zullinger <tmz@pobox.com> - 2.6.16-1
 - Update to 2.6.16, fixes CVE-2012-1986, CVE-2012-1987, and CVE-2012-1988
@@ -368,7 +369,7 @@ rm -rf %{buildroot}
 - Update to 0.25.0
 - Fix permissions on /var/log/puppet (#495096)
 - Install emacs mode and vim syntax files (#491437)
-- Install ext/ directory in %%{_datadir}/%{name} (/usr/share/puppet)
+- Install ext/ directory in %%{_datadir}/%%{name} (/usr/share/puppet)
 
 * Mon May 04 2009 Todd Zullinger <tmz@pobox.com> - 0.25.0-0.1.beta1
 - Update to 0.25.0beta1
