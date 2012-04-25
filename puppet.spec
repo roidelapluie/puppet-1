@@ -12,18 +12,16 @@
 %global ruby_version    %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["ruby_version"]')
 
 Name:           puppet
-Version:        2.6.16
+Version:        2.7.13
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
-License:        GPLv2
+License:        ASL 2.0
 URL:            http://puppetlabs.com
 Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
+Source2:        puppetstoredconfigclean.rb
 # https://projects.puppetlabs.com/issues/9167
 Patch0:         0001-9167-Do-not-sent-tagmail-reports-if-no-changes.patch
-# http://projects.puppetlabs.com/issues/11414
-# https://bugzilla.redhat.com/771097
-Patch1:         puppet-2.6.13-augeas-0.10.patch
 
 Group:          System Environment/Base
 
@@ -84,11 +82,9 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
-%patch1 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
 # Fix some rpmlint complaints
-sed -i '/^#!\/usr\/bin\/env ruby/,/^$/d' lib/puppet/util/command_line/*
 for f in mac_dscl.pp mac_dscl_revert.pp \
          mac_pkgdmg.pp ; do
     sed -i -e'1d' examples/$f
@@ -97,8 +93,7 @@ done
 for f in external/nagios.rb network/http_server/mongrel.rb relationship.rb; do
     sed -i -e '1d' lib/puppet/$f
 done
-chmod +x ext/puppet-load.rb ext/puppetstoredconfigclean.rb \
-    ext/regexp_nodes/regexp_nodes.rb
+chmod +x ext/puppet-load.rb ext/regexp_nodes/regexp_nodes.rb
 
 find examples/ -type f -empty | xargs rm
 find examples/ -type f | xargs chmod a-x
@@ -132,11 +127,30 @@ touch %{buildroot}%{_sysconfdir}/puppet/puppetmasterd.conf
 touch %{buildroot}%{_sysconfdir}/puppet/puppetca.conf
 touch %{buildroot}%{_sysconfdir}/puppet/puppetd.conf
 
+# Replace redundant man pages with links to the canonical man page
+pushd %{buildroot}%{_mandir}/man8 >/dev/null
+ln -svf puppet-cert.8.gz puppetca.8.gz
+ln -svf puppet-queue.8.gz puppetqd.8.gz
+ln -svf puppet-kick.8.gz puppetrun.8.gz
+ln -svf puppet-describe.8.gz pi.8.gz
+ln -svf puppet-master.8.gz puppetmasterd.8.gz
+ln -svf puppet-filebucket.8.gz filebucket.8.gz
+ln -svf puppet-agent.8.gz puppetd.8.gz
+ln -svf puppet-doc.8.gz puppetdoc.8.gz
+ln -svf puppet-resource.8.gz ralsh.8.gz
+popd >/dev/null
+
 # Install the ext/ directory to %{_datadir}/%{name}
 install -d %{buildroot}%{_datadir}/%{name}
 cp -a ext/ %{buildroot}%{_datadir}/%{name}
 # emacs and vim bits are installed elsewhere
 rm -rf %{buildroot}%{_datadir}/%{name}/ext/{emacs,vim}
+
+# The puppetstoredconfigclean script was removed now that puppet node clean
+# does this job and more.  For folks that were using this, let's provide the
+# script and give them a hint to use puppet node clean.  Remove this for the
+# next major release after 2.7.
+install -pv %{SOURCE2} %{buildroot}%{_datadir}/%{name}/ext/
 
 # Install emacs mode files
 emacsdir=%{buildroot}%{_datadir}/emacs/site-lisp
@@ -158,7 +172,7 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 
 %files
 %defattr(-, root, root, 0755)
-%doc CHANGELOG COPYING LICENSE README.md README.queueing examples
+%doc CHANGELOG LICENSE README.md examples
 %{_bindir}/pi
 %{_bindir}/puppet
 %{_bindir}/ralsh
@@ -187,13 +201,15 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 %attr(-, puppet, puppet) %{_localstatedir}/run/puppet
 %attr(0750, puppet, puppet) %{_localstatedir}/log/puppet
 %attr(-, puppet, puppet) %{_localstatedir}/lib/puppet
+# Exclude man pages from the server package
+%exclude %{_mandir}/man8/puppet-kick.8.gz
+%exclude %{_mandir}/man8/puppet-master.8.gz
+%exclude %{_mandir}/man8/puppet-queue.8.gz
+%exclude %{_mandir}/man8/puppetmasterd.8.gz
+%exclude %{_mandir}/man8/puppetqd.8.gz
+%exclude %{_mandir}/man8/puppetrun.8.gz
 %{_mandir}/man5/puppet.conf.5.gz
-%{_mandir}/man8/pi.8.gz
-%{_mandir}/man8/puppet.8.gz
-%{_mandir}/man8/puppetca.8.gz
-%{_mandir}/man8/puppetd.8.gz
-%{_mandir}/man8/ralsh.8.gz
-%{_mandir}/man8/puppetdoc.8.gz
+%{_mandir}/man8/*.8.gz
 
 %files server
 %defattr(-, root, root, 0755)
@@ -205,10 +221,13 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 %dir %{_sysconfdir}/puppet/manifests
 %config(noreplace) %{_sysconfdir}/sysconfig/puppetmaster
 %ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetmasterd.conf
-%{_mandir}/man8/filebucket.8.gz
+# Ensure that man pages listed here are excluded from the main package
+%{_mandir}/man8/puppet-kick.8.gz
+%{_mandir}/man8/puppet-master.8.gz
+%{_mandir}/man8/puppet-queue.8.gz
 %{_mandir}/man8/puppetmasterd.8.gz
-%{_mandir}/man8/puppetrun.8.gz
 %{_mandir}/man8/puppetqd.8.gz
+%{_mandir}/man8/puppetrun.8.gz
 
 # Fixed uid/gid were assigned in bz 472073 (Fedora), 471918 (RHEL-5),
 # and 471919 (RHEL-4)
@@ -279,6 +298,10 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Wed Apr 25 2012 Todd Zullinger <tmz@pobox.com> - 2.7.13-1
+- Update to 2.7.13
+- Change license from GPLv2 to ASL 2.0
+
 * Wed Apr 11 2012 Todd Zullinger <tmz@pobox.com> - 2.6.16-1
 - Update to 2.6.16, fixes CVE-2012-1986, CVE-2012-1987, and CVE-2012-1988
 - Correct permissions of /var/log/puppet (0750)
