@@ -244,33 +244,9 @@ exit 0
 
 %post
 /sbin/chkconfig --add puppet || :
-%if 0%{?rhel}
-if [ "$1" -ge 1 ]; then
-  # The pidfile changed from 0.25.x to 2.6.x, handle upgrades without leaving
-  # the old process running.
-  oldpid="%{_localstatedir}/run/puppet/puppetd.pid"
-  newpid="%{_localstatedir}/run/puppet/agent.pid"
-  if [ -s "$oldpid" -a ! -s "$newpid" ]; then
-    (kill $(< "$oldpid") && rm -f "$oldpid" && \
-      /sbin/service puppet start) >/dev/null 2>&1 || :
-  fi
-fi
-%endif
 
 %post server
 /sbin/chkconfig --add puppetmaster || :
-%if 0%{?rhel}
-if [ "$1" -ge 1 ]; then
-  # The pidfile changed from 0.25.x to 2.6.x, handle upgrades without leaving
-  # the old process running.
-  oldpid="%{_localstatedir}/run/puppet/puppetmasterd.pid"
-  newpid="%{_localstatedir}/run/puppet/master.pid"
-  if [ -s "$oldpid" -a ! -s "$newpid" ]; then
-    (kill $(< "$oldpid") && rm -f "$oldpid" && \
-      /sbin/service puppetmaster start) >/dev/null 2>&1 || :
-  fi
-fi
-%endif
 
 %preun
 if [ "$1" = 0 ] ; then
@@ -301,6 +277,7 @@ rm -rf %{buildroot}
 * Wed Apr 25 2012 Todd Zullinger <tmz@pobox.com> - 2.7.13-1
 - Update to 2.7.13
 - Change license from GPLv2 to ASL 2.0
+- Drop %%post hacks to deal with upgrades from 0.25
 
 * Wed Apr 11 2012 Todd Zullinger <tmz@pobox.com> - 2.6.16-1
 - Update to 2.6.16, fixes CVE-2012-1986, CVE-2012-1987, and CVE-2012-1988
