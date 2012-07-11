@@ -12,7 +12,7 @@
 %global ruby_version    %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["ruby_version"]')
 
 Name:           puppet
-Version:        2.7.13
+Version:        2.7.18
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
@@ -20,11 +20,9 @@ URL:            http://puppetlabs.com
 Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 Source2:        puppetstoredconfigclean.rb
-# https://projects.puppetlabs.com/issues/9167
-Patch0:         0001-9167-Do-not-sent-tagmail-reports-if-no-changes.patch
 # http://projects.puppetlabs.com/issues/11325
 # https://github.com/puppetlabs/puppet/commit/a71208ba
-Patch1:         0001-Ruby-1.9.3-has-a-different-error-when-require-fails.patch
+Patch0:         0001-Ruby-1.9.3-has-a-different-error-when-require-fails.patch
 
 Group:          System Environment/Base
 
@@ -85,7 +83,6 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
-%patch1 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
 # Fix some rpmlint complaints
@@ -278,6 +275,10 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Wed Jul 11 2012 Todd Zullinger <tmz@pobox.com> - 2.7.18-1
+- Update to 2.7.17, fixes CVE-2012-3864, CVE-2012-3865, CVE-2012-3866,
+  CVE-2012-3867
+
 * Wed Apr 25 2012 Todd Zullinger <tmz@pobox.com> - 2.7.13-1
 - Update to 2.7.13
 - Change license from GPLv2 to ASL 2.0
