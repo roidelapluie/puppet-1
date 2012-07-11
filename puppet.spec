@@ -20,7 +20,8 @@ URL:            http://puppetlabs.com
 Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 Source2:        puppetstoredconfigclean.rb
-# http://projects.puppetlabs.com/issues/11325
+Source3:        puppet-nm-dispatcher
+# https://projects.puppetlabs.com/issues/11325
 # https://github.com/puppetlabs/puppet/commit/a71208ba
 Patch0:         0001-Ruby-1.9.3-has-a-different-error-when-require-fails.patch
 
@@ -141,6 +142,11 @@ ln -svf puppet-doc.8.gz puppetdoc.8.gz
 ln -svf puppet-resource.8.gz ralsh.8.gz
 popd >/dev/null
 
+# Install a NetworkManager dispatcher script to pickup changes to
+# /etc/resolv.conf and such (https://bugzilla.redhat.com/532085).
+install -Dpv %{SOURCE3} \
+    %{buildroot}%{_sysconfdir}/NetworkManager/dispatcher.d/98-%{name}
+
 # Install the ext/ directory to %%{_datadir}/%%{name}
 install -d %{buildroot}%{_datadir}/%{name}
 cp -a ext/ %{buildroot}%{_datadir}/%{name}
@@ -193,6 +199,9 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 %ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetca.conf
 %ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetd.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/puppet
+%dir %{_sysconfdir}/NetworkManager
+%dir %{_sysconfdir}/NetworkManager/dispatcher.d
+%{_sysconfdir}/NetworkManager/dispatcher.d/98-puppet
 # We don't want to require emacs or vim, so we need to own these dirs
 %{_datadir}/emacs
 %{_datadir}/vim
@@ -278,6 +287,7 @@ rm -rf %{buildroot}
 * Wed Jul 11 2012 Todd Zullinger <tmz@pobox.com> - 2.7.18-1
 - Update to 2.7.17, fixes CVE-2012-3864, CVE-2012-3865, CVE-2012-3866,
   CVE-2012-3867
+- Improve NetworkManager compatibility, thanks to Orion Poplawski (#532085)
 
 * Wed Apr 25 2012 Todd Zullinger <tmz@pobox.com> - 2.7.13-1
 - Update to 2.7.13
