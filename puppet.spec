@@ -24,6 +24,7 @@ Source3:        puppet-nm-dispatcher
 # https://projects.puppetlabs.com/issues/11325
 # https://github.com/puppetlabs/puppet/commit/a71208ba
 Patch0:         0001-Ruby-1.9.3-has-a-different-error-when-require-fails.patch
+Patch1:         0001-Preserve-timestamps-when-installing-files.patch
 
 Group:          System Environment/Base
 
@@ -84,6 +85,7 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
+%patch1 -p1
 patch -s -p1 < conf/redhat/rundir-perms.patch
 
 # Fix some rpmlint complaints
@@ -288,6 +290,7 @@ rm -rf %{buildroot}
 - Update to 2.7.17, fixes CVE-2012-3864, CVE-2012-3865, CVE-2012-3866,
   CVE-2012-3867
 - Improve NetworkManager compatibility, thanks to Orion Poplawski (#532085)
+- Preserve timestamps when installing files
 
 * Wed Apr 25 2012 Todd Zullinger <tmz@pobox.com> - 2.7.13-1
 - Update to 2.7.13
