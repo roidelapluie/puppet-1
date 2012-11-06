@@ -8,30 +8,32 @@
 %global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["sitelibdir"]')
 %endif
 
-%global confdir         conf/redhat
+# F-17 also ships with systemd; package/use systemd files in this case
+%if 0%{?fedora} >= 17
+%global _with_systemd 1
+%else
+%global _with_systemd 0
+%endif
+
+%global confdir         ext/redhat
 %global ruby_version    %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["ruby_version"]')
 
 Name:           puppet
-Version:        2.7.18
+Version:        3.0.2
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
 Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
-Source2:        puppetstoredconfigclean.rb
-Source3:        puppet-nm-dispatcher
-# https://projects.puppetlabs.com/issues/11325
-# https://github.com/puppetlabs/puppet/commit/a71208ba
-Patch0:         0001-Ruby-1.9.3-has-a-different-error-when-require-fails.patch
-Patch1:         0001-Preserve-timestamps-when-installing-files.patch
+Source2:        puppet-nm-dispatcher
 
 Group:          System Environment/Base
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:  facter >= 1.5
-BuildRequires:  ruby >= 1.8.5
+BuildRequires:  facter >= 1.6.6
+BuildRequires:  ruby >= 1.8.7
 
 %if 0%{?fedora} || 0%{?rhel} >= 5
 BuildArch:      noarch
@@ -51,17 +53,28 @@ Requires:       ruby(shadow)
 %endif
 %endif
 
-Requires:       facter >= 1.5
+Requires:       facter >= 1.6.6
+Requires:       hiera >= 1.0.0
+Obsoletes:      hiera-puppet < 1.0.0-2
+Provides:       hiera-puppet = %{version}-%{release}
+
+# Puppet 3.x drops ruby 1.8.5 support and adds ruby 1.9 support
 %if "%{ruby_version}" == "1.8"
-Requires:       ruby >= 1.8.5
+Requires:       ruby >= 1.8.7
 %endif
 %{!?_without_augeas:Requires: ruby(augeas)}
 
 Requires(pre):  shadow-utils
+%if 0%{?_with_systemd}
+Requires(post): systemd
+Requires(preun): systemd
+Requires(postun): systemd
+%else
 Requires(post): chkconfig
 Requires(preun): chkconfig
 Requires(preun): initscripts
 Requires(postun): initscripts
+%endif
 
 %description
 Puppet lets you centrally manage every important aspect of your system using a
@@ -73,10 +86,16 @@ along with obviously discrete elements like packages, services, and files.
 Group:          System Environment/Base
 Summary:        Server for the puppet system management tool
 Requires:       puppet = %{version}-%{release}
+%if 0%{?_with_systemd}
+Requires(post): systemd
+Requires(preun): systemd
+Requires(postun): systemd
+%else
 Requires(post): chkconfig
 Requires(preun): chkconfig
 Requires(preun): initscripts
 Requires(postun): initscripts
+%endif
 
 %description server
 Provides the central puppet server daemon which provides manifests to clients.
@@ -84,9 +103,7 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
-%patch0 -p1
-%patch1 -p1
-patch -s -p1 < conf/redhat/rundir-perms.patch
+patch -s -p1 < %{confdir}/rundir-perms.patch
 
 # Fix some rpmlint complaints
 for f in mac_dscl.pp mac_dscl_revert.pp \
@@ -94,7 +111,7 @@ for f in mac_dscl.pp mac_dscl_revert.pp \
     sed -i -e'1d' examples/$f
     chmod a-x examples/$f
 done
-for f in external/nagios.rb network/http_server/mongrel.rb relationship.rb; do
+for f in external/nagios.rb relationship.rb; do
     sed -i -e '1d' lib/puppet/$f
 done
 chmod +x ext/puppet-load.rb ext/regexp_nodes/regexp_nodes.rb
@@ -117,36 +134,26 @@ install -d -m0755 %{buildroot}%{_datadir}/%{name}/modules
 install -d -m0755 %{buildroot}%{_localstatedir}/lib/puppet
 install -d -m0755 %{buildroot}%{_localstatedir}/run/puppet
 install -d -m0750 %{buildroot}%{_localstatedir}/log/puppet
+
+%if 0%{?_with_systemd}
+%{__install} -d -m0755  %{buildroot}%{_unitdir}
+install -Dp -m0644 ext/systemd/puppetagent.service %{buildroot}%{_unitdir}/puppetagent.service
+install -Dp -m0644 ext/systemd/puppetmaster.service %{buildroot}%{_unitdir}/puppetmaster.service
+%else
 install -Dp -m0644 %{confdir}/client.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/puppet
 install -Dp -m0755 %{confdir}/client.init %{buildroot}%{_initrddir}/puppet
 install -Dp -m0644 %{confdir}/server.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/puppetmaster
 install -Dp -m0755 %{confdir}/server.init %{buildroot}%{_initrddir}/puppetmaster
+install -Dp -m0755 %{confdir}/queue.init %{buildroot}%{_initrddir}/puppetqueue
+%endif
+
 install -Dp -m0644 %{confdir}/fileserver.conf %{buildroot}%{_sysconfdir}/puppet/fileserver.conf
 install -Dp -m0644 %{confdir}/puppet.conf %{buildroot}%{_sysconfdir}/puppet/puppet.conf
 install -Dp -m0644 %{confdir}/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/puppet
 
-# We need something for these ghosted files, otherwise rpmbuild
-# will complain loudly. They won't be included in the binary packages
-touch %{buildroot}%{_sysconfdir}/puppet/puppetmasterd.conf
-touch %{buildroot}%{_sysconfdir}/puppet/puppetca.conf
-touch %{buildroot}%{_sysconfdir}/puppet/puppetd.conf
-
-# Replace redundant man pages with links to the canonical man page
-pushd %{buildroot}%{_mandir}/man8 >/dev/null
-ln -svf puppet-cert.8.gz puppetca.8.gz
-ln -svf puppet-queue.8.gz puppetqd.8.gz
-ln -svf puppet-kick.8.gz puppetrun.8.gz
-ln -svf puppet-describe.8.gz pi.8.gz
-ln -svf puppet-master.8.gz puppetmasterd.8.gz
-ln -svf puppet-filebucket.8.gz filebucket.8.gz
-ln -svf puppet-agent.8.gz puppetd.8.gz
-ln -svf puppet-doc.8.gz puppetdoc.8.gz
-ln -svf puppet-resource.8.gz ralsh.8.gz
-popd >/dev/null
-
 # Install a NetworkManager dispatcher script to pickup changes to
 # /etc/resolv.conf and such (https://bugzilla.redhat.com/532085).
-install -Dpv %{SOURCE3} \
+install -Dpv %{SOURCE2} \
     %{buildroot}%{_sysconfdir}/NetworkManager/dispatcher.d/98-%{name}
 
 # Install the ext/ directory to %%{_datadir}/%%{name}
@@ -154,12 +161,10 @@ install -d %{buildroot}%{_datadir}/%{name}
 cp -a ext/ %{buildroot}%{_datadir}/%{name}
 # emacs and vim bits are installed elsewhere
 rm -rf %{buildroot}%{_datadir}/%{name}/ext/{emacs,vim}
-
-# The puppetstoredconfigclean script was removed now that puppet node clean
-# does this job and more.  For folks that were using this, let's provide the
-# script and give them a hint to use puppet node clean.  Remove this for the
-# next major release after 2.7.
-install -pv %{SOURCE2} %{buildroot}%{_datadir}/%{name}/ext/
+# remove misc packaging artifacts in source not applicable to rpm
+rm -rf %{buildroot}%{_datadir}/%{name}/ext/{gentoo,freebsd,solaris,suse,windows,osx,ips,debian}
+rm -f %{buildroot}%{_datadir}/%{name}/ext/{build_defaults.yaml,project_data.yaml}
+rm -f %{buildroot}%{_datadir}/%{name}/ext/redhat/*.init
 
 # Install emacs mode files
 emacsdir=%{buildroot}%{_datadir}/emacs/site-lisp
@@ -179,27 +184,28 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
     %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
 %endif
 
+# Create puppet modules directory for puppet module tool
+mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
+
 %files
 %defattr(-, root, root, 0755)
-%doc CHANGELOG LICENSE README.md examples
-%{_bindir}/pi
+%doc LICENSE README.md examples
 %{_bindir}/puppet
-%{_bindir}/ralsh
-%{_bindir}/filebucket
-%{_bindir}/puppetdoc
-%{_sbindir}/puppetca
-%{_sbindir}/puppetd
+%{_bindir}/extlookup2hiera
 %{puppet_libdir}/*
+%if 0%{?_with_systemd}
+%{_unitdir}/puppetagent.service
+%else
 %{_initrddir}/puppet
+%config(noreplace) %{_sysconfdir}/sysconfig/puppet
+%endif
 %dir %{_sysconfdir}/puppet
+%dir %{_sysconfdir}/%{name}/modules
 %if 0%{?fedora} >= 15
 %config(noreplace) %{_sysconfdir}/tmpfiles.d/%{name}.conf
 %endif
-%config(noreplace) %{_sysconfdir}/sysconfig/puppet
 %config(noreplace) %{_sysconfdir}/puppet/puppet.conf
 %config(noreplace) %{_sysconfdir}/puppet/auth.conf
-%ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetca.conf
-%ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetd.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/puppet
 %dir %{_sysconfdir}/NetworkManager
 %dir %{_sysconfdir}/NetworkManager/dispatcher.d
@@ -213,33 +219,54 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 %attr(-, puppet, puppet) %{_localstatedir}/run/puppet
 %attr(0750, puppet, puppet) %{_localstatedir}/log/puppet
 %attr(-, puppet, puppet) %{_localstatedir}/lib/puppet
-# Exclude man pages from the server package
-%exclude %{_mandir}/man8/puppet-kick.8.gz
-%exclude %{_mandir}/man8/puppet-master.8.gz
-%exclude %{_mandir}/man8/puppet-queue.8.gz
-%exclude %{_mandir}/man8/puppetmasterd.8.gz
-%exclude %{_mandir}/man8/puppetqd.8.gz
-%exclude %{_mandir}/man8/puppetrun.8.gz
 %{_mandir}/man5/puppet.conf.5.gz
-%{_mandir}/man8/*.8.gz
+%{_mandir}/man8/puppet.8.gz
+%{_mandir}/man8/puppet-agent.8.gz
+%{_mandir}/man8/puppet-apply.8.gz
+%{_mandir}/man8/puppet-catalog.8.gz
+%{_mandir}/man8/puppet-describe.8.gz
+%{_mandir}/man8/puppet-ca.8.gz
+%{_mandir}/man8/puppet-cert.8.gz
+%{_mandir}/man8/puppet-certificate.8.gz
+%{_mandir}/man8/puppet-certificate_request.8.gz
+%{_mandir}/man8/puppet-certificate_revocation_list.8.gz
+%{_mandir}/man8/puppet-config.8.gz
+%{_mandir}/man8/puppet-device.8.gz
+%{_mandir}/man8/puppet-doc.8.gz
+%{_mandir}/man8/puppet-facts.8.gz
+%{_mandir}/man8/puppet-file.8.gz
+%{_mandir}/man8/puppet-filebucket.8.gz
+%{_mandir}/man8/puppet-help.8.gz
+%{_mandir}/man8/puppet-inspect.8.gz
+%{_mandir}/man8/puppet-instrumentation_data.8.gz
+%{_mandir}/man8/puppet-instrumentation_listener.8.gz
+%{_mandir}/man8/puppet-instrumentation_probe.8.gz
+%{_mandir}/man8/puppet-key.8.gz
+%{_mandir}/man8/puppet-man.8.gz
+%{_mandir}/man8/puppet-module.8.gz
+%{_mandir}/man8/puppet-node.8.gz
+%{_mandir}/man8/puppet-parser.8.gz
+%{_mandir}/man8/puppet-plugin.8.gz
+%{_mandir}/man8/puppet-report.8.gz
+%{_mandir}/man8/puppet-resource.8.gz
+%{_mandir}/man8/puppet-resource_type.8.gz
+%{_mandir}/man8/puppet-secret_agent.8.gz
+%{_mandir}/man8/puppet-status.8.gz
 
 %files server
 %defattr(-, root, root, 0755)
-%{_sbindir}/puppetmasterd
-%{_sbindir}/puppetrun
-%{_sbindir}/puppetqd
+%if 0%{?_with_systemd}
+%{_unitdir}/puppetmaster.service
+%else
 %{_initrddir}/puppetmaster
+%{_initrddir}/puppetqueue
+%config(noreplace) %{_sysconfdir}/sysconfig/puppetmaster
+%endif
 %config(noreplace) %{_sysconfdir}/puppet/fileserver.conf
 %dir %{_sysconfdir}/puppet/manifests
-%config(noreplace) %{_sysconfdir}/sysconfig/puppetmaster
-%ghost %config(noreplace,missingok) %{_sysconfdir}/puppet/puppetmasterd.conf
-# Ensure that man pages listed here are excluded from the main package
 %{_mandir}/man8/puppet-kick.8.gz
 %{_mandir}/man8/puppet-master.8.gz
 %{_mandir}/man8/puppet-queue.8.gz
-%{_mandir}/man8/puppetmasterd.8.gz
-%{_mandir}/man8/puppetqd.8.gz
-%{_mandir}/man8/puppetrun.8.gz
 
 # Fixed uid/gid were assigned in bz 472073 (Fedora), 471918 (RHEL-5),
 # and 471919 (RHEL-4)
@@ -255,37 +282,81 @@ fi
 exit 0
 
 %post
+%if 0%{?_with_systemd}
+/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+%else
 /sbin/chkconfig --add puppet || :
+%endif
 
 %post server
+%if 0%{?_with_systemd}
+/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+%else
 /sbin/chkconfig --add puppetmaster || :
+%endif
 
 %preun
+%if 0%{?_with_systemd}
+if [ "$1" -eq 0 ] ; then
+  /bin/systemctl --no-reload disable puppetagent.service > /dev/null 2>&1 || :
+  /bin/systemctl stop puppetagent.service > /dev/null 2>&1 || :
+  /bin/systemctl daemon-reload >/dev/null 2>&1 || :
+fi
+%else
 if [ "$1" = 0 ] ; then
   /sbin/service puppet stop >/dev/null 2>&1
   /sbin/chkconfig --del puppet || :
 fi
+%endif
 
 %preun server
+%if 0%{?_with_systemd}
+if [ $1 -eq 0 ] ; then
+  /bin/systemctl --no-reload disable puppetmaster.service > /dev/null 2>&1 || :
+  /bin/systemctl stop puppetmaster.service > /dev/null 2>&1 || :
+  /bin/systemctl daemon-reload >/dev/null 2>&1 || :
+fi
+%else
 if [ "$1" = 0 ] ; then
   /sbin/service puppetmaster stop >/dev/null 2>&1
   /sbin/chkconfig --del puppetmaster || :
 fi
+%endif
 
 %postun
+%if 0%{?_with_systemd}
+if [ $1 -ge 1 ] ; then
+  /bin/systemctl try-restart puppetagent.service >/dev/null 2>&1 || :
+fi
+%else
 if [ "$1" -ge 1 ]; then
   /sbin/service puppet condrestart >/dev/null 2>&1 || :
 fi
+%endif
 
 %postun server
+%if 0%{?_with_systemd}
+if [ $1 -ge 1 ] ; then
+  /bin/systemctl try-restart puppetmaster.service >/dev/null 2>&1 || :
+fi
+%else
 if [ "$1" -ge 1 ]; then
   /sbin/service puppetmaster condrestart >/dev/null 2>&1 || :
 fi
+%endif
 
 %clean
 rm -rf %{buildroot}
 
 %changelog
+* Tue Oct 30 2012 Moses Mendoza <moses@puppetlabs.com> - 3.0.2-1
+- Update to 3.0.2
+- Update new dependencies (ruby >= 1.8.7, facter >= 1.6.6, hiera >= 1.0.0)
+- Update for manpage and file changes in upstream
+- Add conditionals for systemd service management
+- Remove 0001-Ruby-1.9.3-has-a-different-error-when-require-fails.patch
+- Remove 0001-Preserve-timestamps-when-installing-files.patch
+
 * Wed Jul 11 2012 Todd Zullinger <tmz@pobox.com> - 2.7.18-1
 - Update to 2.7.17, fixes CVE-2012-3864, CVE-2012-3865, CVE-2012-3866,
   CVE-2012-3867
