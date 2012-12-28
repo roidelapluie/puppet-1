@@ -1,5 +1,5 @@
 *~
 *.rpm
 *.tar.gz
+*.tar.gz.ac
 /.build*.log
-/puppet-*/
