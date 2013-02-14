@@ -19,7 +19,7 @@
 %global ruby_version    %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["ruby_version"]')
 
 Name:           puppet
-Version:        3.0.2
+Version:        3.1.0
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
@@ -106,8 +106,9 @@ The server can also function as a certificate authority and file server.
 patch -s -p1 < %{confdir}/rundir-perms.patch
 
 # Fix some rpmlint complaints
-for f in mac_dscl.pp mac_dscl_revert.pp \
-         mac_pkgdmg.pp ; do
+for f in mac_automount.pp  mcx_dock_absent.pp  mcx_dock_default.pp \
+    mcx_dock_full.pp mcx_dock_invalid.pp mcx_nogroup.pp \
+    mcx_notexists_absent.pp; do
     sed -i -e'1d' examples/$f
     chmod a-x examples/$f
 done
@@ -115,12 +116,6 @@ for f in external/nagios.rb relationship.rb; do
     sed -i -e '1d' lib/puppet/$f
 done
 chmod +x ext/puppet-load.rb ext/regexp_nodes/regexp_nodes.rb
-
-find examples/ -type f -empty | xargs rm
-find examples/ -type f | xargs chmod a-x
-
-# puppet-queue.conf is more of an example, used for stompserver
-mv conf/puppet-queue.conf examples/etc/puppet/
 
 %build
 # Nothing to build
@@ -252,6 +247,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 %{_mandir}/man8/puppet-resource_type.8.gz
 %{_mandir}/man8/puppet-secret_agent.8.gz
 %{_mandir}/man8/puppet-status.8.gz
+%{_mandir}/man8/extlookup2hiera.8.gz
 
 %files server
 %defattr(-, root, root, 0755)
@@ -349,6 +345,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Mon Feb 11 2013 Sam Kottler <shk@redhat.com> - 3.1.0-1
+- Update to 3.1.0
+
 * Tue Oct 30 2012 Moses Mendoza <moses@puppetlabs.com> - 3.0.2-1
 - Update to 3.0.2
 - Update new dependencies (ruby >= 1.8.7, facter >= 1.6.6, hiera >= 1.0.0)
