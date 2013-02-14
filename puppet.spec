@@ -20,7 +20,7 @@
 
 Name:           puppet
 Version:        3.0.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -349,6 +349,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.0.2-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
+
 * Tue Oct 30 2012 Moses Mendoza <moses@puppetlabs.com> - 3.0.2-1
 - Update to 3.0.2
 - Update new dependencies (ruby >= 1.8.7, facter >= 1.6.6, hiera >= 1.0.0)
