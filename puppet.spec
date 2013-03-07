@@ -20,13 +20,15 @@
 
 Name:           puppet
 Version:        3.0.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
 Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 Source2:        puppet-nm-dispatcher
+
+Patch0:         puppetmaster-old-client-compat.patch
 
 Group:          System Environment/Base
 
@@ -103,6 +105,7 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
+%patch0 -p1
 patch -s -p1 < %{confdir}/rundir-perms.patch
 
 # Fix some rpmlint complaints
@@ -349,6 +352,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Thu Mar  7 2013 Daniel Drake <dsd@laptop.org> - 3.0.2-2
+- Improve server compatibility with old puppet clients (#831303)
+
 * Tue Oct 30 2012 Moses Mendoza <moses@puppetlabs.com> - 3.0.2-1
 - Update to 3.0.2
 - Update new dependencies (ruby >= 1.8.7, facter >= 1.6.6, hiera >= 1.0.0)

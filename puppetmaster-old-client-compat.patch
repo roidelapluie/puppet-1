@@ -1,0 +1,39 @@
+From ec462b7b974fc34110437010f862780fb2ee39a3 Mon Sep 17 00:00:00 2001
+From: Daniel Drake <dsd@laptop.org>
+Date: Thu, 14 Feb 2013 15:05:10 -0600
+Subject: [PATCH] (#18781) Be more tolerant of old clients in WEBrick server
+
+In #18781 and #6117 there are cases of relatively simplistic puppet
+setups failing between old versions of the puppet client (which
+always use HTTP GET) and new versions of the puppet WEBrick server
+(which has a relatively low limit on the size of a valid GET: 2083
+bytes).
+
+While there are other non-WEBrick server options available, WEBrick
+has the advantage of simplicity, so it would be nice to keep it working.
+
+Here we patch the WEBrick constant which specifies the maximum size of
+a HTTP GET request, increasing it to a value that should work for common
+setups.
+---
+ lib/puppet/util/monkey_patches.rb |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+Index: puppet-3.0.2/lib/puppet/util/monkey_patches.rb
+===================================================================
+--- puppet-3.0.2.orig/lib/puppet/util/monkey_patches.rb
++++ puppet-3.0.2/lib/puppet/util/monkey_patches.rb
+@@ -310,3 +310,13 @@ if RUBY_VERSION == '1.8.5'
+     module_function :move
+   end
+ end
++
++# Old puppet clients may make large GET requests, lets be reasonably tolerant
++# in our default WEBrick server.
++require 'webrick'
++if defined?(WEBrick::HTTPRequest::MAX_URI_LENGTH) and WEBrick::HTTPRequest::MAX_URI_LENGTH < 8192
++  # Silence ruby warning: already initialized constant MAX_URI_LENGTH
++  v, $VERBOSE = $VERBOSE, nil
++  WEBrick::HTTPRequest.const_set("MAX_URI_LENGTH", 8192)
++  $VERBOSE = v
++end
