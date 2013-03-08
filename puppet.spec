@@ -23,7 +23,7 @@
 
 Name:           puppet
 Version:        3.1.0
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -351,8 +351,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Thu Mar 07 2013 Michael Stahnke <stahnma@puppetlabs.com> - 3.1.0-3
+* Thu Mar 07 2013 Michael Stahnke <stahnma@puppetlabs.com> - 3.1.0-4
 - Disable systemd in F18 as per bz#873853
+- Update Patch0 to work with 3.1
 
 * Thu Mar  7 2013 Daniel Drake <dsd@laptop.org> - 3.1.0-2
 - Improve server compatibility with old puppet clients (#831303)
