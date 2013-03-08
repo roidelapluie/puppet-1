@@ -2,6 +2,9 @@
 # --without augeas and/or --without selinux to rpmbuild or mock
 
 # F-17 and above have ruby-1.9.x, and place libs in a different location
+
+# Specifically not using systemd on F18 as it's technically a break between
+# using SystemV on 2.7.x and Systemd on 3.1.0.
 %if 0%{?fedora} >= 17
 %global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["vendorlibdir"]')
 %else
@@ -9,7 +12,7 @@
 %endif
 
 # F-17 also ships with systemd; package/use systemd files in this case
-%if 0%{?fedora} >= 17
+%if 0%{?fedora} > 18
 %global _with_systemd 1
 %else
 %global _with_systemd 0
@@ -19,8 +22,8 @@
 %global ruby_version    %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["ruby_version"]')
 
 Name:           puppet
-Version:        3.0.2
-Release:        2%{?dist}
+Version:        3.1.0
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -109,8 +112,9 @@ The server can also function as a certificate authority and file server.
 patch -s -p1 < %{confdir}/rundir-perms.patch
 
 # Fix some rpmlint complaints
-for f in mac_dscl.pp mac_dscl_revert.pp \
-         mac_pkgdmg.pp ; do
+for f in mac_automount.pp  mcx_dock_absent.pp  mcx_dock_default.pp \
+    mcx_dock_full.pp mcx_dock_invalid.pp mcx_nogroup.pp \
+    mcx_notexists_absent.pp; do
     sed -i -e'1d' examples/$f
     chmod a-x examples/$f
 done
@@ -118,12 +122,6 @@ for f in external/nagios.rb relationship.rb; do
     sed -i -e '1d' lib/puppet/$f
 done
 chmod +x ext/puppet-load.rb ext/regexp_nodes/regexp_nodes.rb
-
-find examples/ -type f -empty | xargs rm
-find examples/ -type f | xargs chmod a-x
-
-# puppet-queue.conf is more of an example, used for stompserver
-mv conf/puppet-queue.conf examples/etc/puppet/
 
 %build
 # Nothing to build
@@ -255,6 +253,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 %{_mandir}/man8/puppet-resource_type.8.gz
 %{_mandir}/man8/puppet-secret_agent.8.gz
 %{_mandir}/man8/puppet-status.8.gz
+%{_mandir}/man8/extlookup2hiera.8.gz
 
 %files server
 %defattr(-, root, root, 0755)
@@ -352,8 +351,14 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Thu Mar  7 2013 Daniel Drake <dsd@laptop.org> - 3.0.2-2
+* Thu Mar 07 2013 Michael Stahnke <stahnma@puppetlabs.com> - 3.1.0-3
+- Disable systemd in F18 as per bz#873853
+
+* Thu Mar  7 2013 Daniel Drake <dsd@laptop.org> - 3.1.0-2
 - Improve server compatibility with old puppet clients (#831303)
+
+* Mon Feb 11 2013 Sam Kottler <shk@redhat.com> - 3.1.0-1
+- Update to 3.1.0
 
 * Tue Oct 30 2012 Moses Mendoza <moses@puppetlabs.com> - 3.0.2-1
 - Update to 3.0.2

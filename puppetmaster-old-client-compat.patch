@@ -19,12 +19,21 @@ setups.
  lib/puppet/util/monkey_patches.rb |    9 +++++++++
  1 file changed, 9 insertions(+)
 
+<<<<<<< HEAD
 Index: puppet-3.0.2/lib/puppet/util/monkey_patches.rb
 ===================================================================
 --- puppet-3.0.2.orig/lib/puppet/util/monkey_patches.rb
 +++ puppet-3.0.2/lib/puppet/util/monkey_patches.rb
 @@ -310,3 +310,13 @@ if RUBY_VERSION == '1.8.5'
      module_function :move
+=======
+Index: puppet-3.1.0/lib/puppet/util/monkey_patches.rb
+===================================================================
+--- puppet-3.1.0.orig/lib/puppet/util/monkey_patches.rb
++++ puppet-3.1.0/lib/puppet/util/monkey_patches.rb
+@@ -356,3 +356,13 @@ unless Dir.respond_to?(:mktmpdir)
+     end
+>>>>>>> master
    end
  end
 +
