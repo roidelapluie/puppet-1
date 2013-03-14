@@ -22,8 +22,8 @@
 %global ruby_version    %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["ruby_version"]')
 
 Name:           puppet
-Version:        3.1.0
-Release:        4%{?dist}
+Version:        3.1.1
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -31,7 +31,8 @@ Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.g
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 Source2:        puppet-nm-dispatcher
 
-Patch0:         puppetmaster-old-client-compat.patch
+# Pulled from upstream, will be released the next time they cut a release from master
+Patch0:         0001-18781-Be-more-tolerant-of-old-clients-in-WEBrick-ser.patch
 
 Group:          System Environment/Base
 
@@ -351,6 +352,10 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Wed Mar 13 2013 Michael Stahnke <stahnma@puppetlabs.com> - 3.1.1-1
+- Fixes for CVE-2013-1640 CVE-2013-1652 CVE-2013-1653 CVE-2013-1654
+- CVE-2013-1655 CVE-2013-2274 CVE-2013-2275
+
 * Thu Mar 07 2013 Michael Stahnke <stahnma@puppetlabs.com> - 3.1.0-4
 - Disable systemd in F18 as per bz#873853
 - Update Patch0 to work with 3.1
