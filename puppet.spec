@@ -5,8 +5,8 @@
 
 # Specifically not using systemd on F18 as it's technically a break between
 # using SystemV on 2.7.x and Systemd on 3.1.0.
-%if 0%{?fedora} >= 17
-%global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["vendorlibdir"]')
+%if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
+%global puppet_libdir   %{ruby_vendorlibdir}
 %else
 %global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["sitelibdir"]')
 %endif
@@ -19,11 +19,10 @@
 %endif
 
 %global confdir         ext/redhat
-%global ruby_version    %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["ruby_version"]')
 
 Name:           puppet
 Version:        3.1.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -39,16 +38,19 @@ Group:          System Environment/Base
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  facter >= 1.6.6
-BuildRequires:  ruby >= 1.8.7
+BuildRequires:  ruby-devel >= 1.8.7
 
-%if 0%{?fedora} || 0%{?rhel} >= 5
 BuildArch:      noarch
-# Work around the lack of ruby in the default mock buildroot
-%if "%{ruby_version}"
-Requires:       ruby(abi) = %{ruby_version}
+%if 0%{?rhel} <= 6
+Requires:       ruby(abi) = 1.8
+%else
+%if 0%{?fedora} <= 18
+Requires:       ruby(abi) = 1.9.1
+%else
+Requires:       ruby(release)
+%endif
 %endif
 Requires:       ruby(shadow)
-%endif
 
 # Pull in ruby selinux bindings where available
 %if 0%{?fedora} || 0%{?rhel} >= 6
@@ -64,10 +66,6 @@ Requires:       hiera >= 1.0.0
 Obsoletes:      hiera-puppet < 1.0.0-2
 Provides:       hiera-puppet = %{version}-%{release}
 
-# Puppet 3.x drops ruby 1.8.5 support and adds ruby 1.9 support
-%if "%{ruby_version}" == "1.8"
-Requires:       ruby >= 1.8.7
-%endif
 %{!?_without_augeas:Requires: ruby(augeas)}
 
 Requires(pre):  shadow-utils
@@ -352,6 +350,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Fri Mar 15 2013 Vít Ondruch <vondruch@redhat.com> - 3.1.1-2
+- Rebuild for https://fedoraproject.org/wiki/Features/Ruby_2.0.0
+
 * Wed Mar 13 2013 Michael Stahnke <stahnma@puppetlabs.com> - 3.1.1-1
 - Fixes for CVE-2013-1640 CVE-2013-1652 CVE-2013-1653 CVE-2013-1654
 - CVE-2013-1655 CVE-2013-2274 CVE-2013-2275
