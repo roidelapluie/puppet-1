@@ -22,7 +22,7 @@
 
 Name:           puppet
 Version:        3.1.1
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -32,6 +32,9 @@ Source2:        puppet-nm-dispatcher
 
 # Pulled from upstream, will be released the next time they cut a release from master
 Patch0:         0001-18781-Be-more-tolerant-of-old-clients-in-WEBrick-ser.patch
+# https://projects.puppetlabs.com/issues/18494
+# Ruby 2.0 support
+Patch1:         puppet-ruby2.patch
 
 Group:          System Environment/Base
 
@@ -108,6 +111,7 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch0 -p1
+%patch1 -p1
 patch -s -p1 < %{confdir}/rundir-perms.patch
 
 # Fix some rpmlint complaints
@@ -350,6 +354,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Tue Apr 16 2013 Orion Poplawski <orion@cora.nwra.com> - 3.1.1-3
+- Add upstream patch for ruby 2.0 support
+
 * Fri Mar 15 2013 Vít Ondruch <vondruch@redhat.com> - 3.1.1-2
 - Rebuild for https://fedoraproject.org/wiki/Features/Ruby_2.0.0
 
