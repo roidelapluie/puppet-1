@@ -44,7 +44,7 @@ BuildRequires:  facter >= 1.6.6
 BuildRequires:  ruby-devel >= 1.8.7
 
 BuildArch:      noarch
-%if 0%{?rhel} <= 6
+%if 0%{?rhel} && 0%{?rhel} <= 6
 Requires:       ruby(abi) = 1.8
 %else
 %if 0%{?fedora} <= 18
@@ -356,6 +356,7 @@ rm -rf %{buildroot}
 %changelog
 * Tue Apr 16 2013 Orion Poplawski <orion@cora.nwra.com> - 3.1.1-3
 - Add upstream patch for ruby 2.0 support
+- Fix rhel ruby conditional
 
 * Fri Mar 15 2013 Vít Ondruch <vondruch@redhat.com> - 3.1.1-2
 - Rebuild for https://fedoraproject.org/wiki/Features/Ruby_2.0.0
