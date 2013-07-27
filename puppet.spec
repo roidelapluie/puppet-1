@@ -22,7 +22,7 @@
 
 Name:           puppet
 Version:        3.1.1
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -54,6 +54,9 @@ Requires:       ruby(release)
 %endif
 %endif
 Requires:       ruby(shadow)
+
+# Prevents jruby from being pulled in by dependencies (BZ #985208)
+Requires:       ruby
 
 # Pull in ruby selinux bindings where available
 %if 0%{?fedora} || 0%{?rhel} >= 6
@@ -354,6 +357,10 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+=======
+* Fri Jul 26 2013 Sam Kottler <skottler@fedoraproject.org> - 3.1.1-4
+- Add hard dependency on ruby
+
 * Tue Apr 16 2013 Orion Poplawski <orion@cora.nwra.com> - 3.1.1-3
 - Add upstream patch for ruby 2.0 support
 - Fix rhel ruby conditional
