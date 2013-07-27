@@ -357,7 +357,6 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-=======
 * Fri Jul 26 2013 Sam Kottler <skottler@fedoraproject.org> - 3.1.1-4
 - Add hard dependency on ruby
 
