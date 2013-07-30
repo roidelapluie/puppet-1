@@ -22,13 +22,14 @@
 
 Name:           puppet
 Version:        3.1.1
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
 Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 Source2:        puppet-nm-dispatcher
+Source3:        puppet-nm-dispatcher.systemd
 
 # Pulled from upstream, will be released the next time they cut a release from master
 Patch0:         0001-18781-Be-more-tolerant-of-old-clients-in-WEBrick-ser.patch
@@ -160,8 +161,13 @@ install -Dp -m0644 %{confdir}/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/p
 
 # Install a NetworkManager dispatcher script to pickup changes to
 # /etc/resolv.conf and such (https://bugzilla.redhat.com/532085).
+%if 0%{?_with_systemd}
+install -Dpv %{SOURCE3} \
+    %{buildroot}%{_sysconfdir}/NetworkManager/dispatcher.d/98-%{name}
+%else
 install -Dpv %{SOURCE2} \
     %{buildroot}%{_sysconfdir}/NetworkManager/dispatcher.d/98-%{name}
+%endif
 
 # Install the ext/ directory to %%{_datadir}/%%{name}
 install -d %{buildroot}%{_datadir}/%{name}
@@ -357,6 +363,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Tue Jul 30 2013 Orion Poplawski <orion@cora.nwra.com> - 3.1.1-5
+- Use systemd semantics and name in NM dispatcher script
+
 * Fri Jul 26 2013 Sam Kottler <skottler@fedoraproject.org> - 3.1.1-4
 - Add hard dependency on ruby
 
