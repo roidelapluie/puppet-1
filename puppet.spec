@@ -22,7 +22,7 @@
 
 Name:           puppet
 Version:        3.1.1
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
