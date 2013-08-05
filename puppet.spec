@@ -87,6 +87,8 @@ Requires(preun): initscripts
 Requires(postun): initscripts
 %endif
 
+Requires: tar
+
 %description
 Puppet lets you centrally manage every important aspect of your system using a
 cross-platform specification language that manages all the separate elements
@@ -363,6 +365,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Wed Aug 7 2013 Sam Kottler <skottler@fedoraproject.org> - 3.1.1-6
+- Add tar as an installation requirement
+
 * Tue Jul 30 2013 Orion Poplawski <orion@cora.nwra.com> - 3.1.1-5
 - Use systemd semantics and name in NM dispatcher script
 
