@@ -21,8 +21,8 @@
 %global confdir         ext/redhat
 
 Name:           puppet
-Version:        3.1.1
-Release:        6%{?dist}
+Version:        3.2.2
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -30,12 +30,6 @@ Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.g
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 Source2:        puppet-nm-dispatcher
 Source3:        puppet-nm-dispatcher.systemd
-
-# Pulled from upstream, will be released the next time they cut a release from master
-Patch0:         0001-18781-Be-more-tolerant-of-old-clients-in-WEBrick-ser.patch
-# https://projects.puppetlabs.com/issues/18494
-# Ruby 2.0 support
-Patch1:         puppet-ruby2.patch
 
 Group:          System Environment/Base
 
@@ -116,8 +110,6 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
-%patch0 -p1
-%patch1 -p1
 patch -s -p1 < %{confdir}/rundir-perms.patch
 
 # Fix some rpmlint complaints
@@ -365,6 +357,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Thu Aug 28 2013 Sam Kottler <skottler@fedoraproject.org> - 3.2.2-1
+- Update to 3.2.2
+
 * Wed Aug 7 2013 Sam Kottler <skottler@fedoraproject.org> - 3.1.1-6
 - Add tar as an installation requirement
 
