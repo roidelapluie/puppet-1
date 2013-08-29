@@ -357,7 +357,7 @@ fi
 rm -rf %{buildroot}
 
 %changelog
-* Thu Aug 28 2013 Sam Kottler <skottler@fedoraproject.org> - 3.2.2-1
+* Thu Aug 29 2013 Sam Kottler <skottler@fedoraproject.org> - 3.2.2-1
 - Update to 3.2.2
 
 * Wed Aug 7 2013 Sam Kottler <skottler@fedoraproject.org> - 3.1.1-6
