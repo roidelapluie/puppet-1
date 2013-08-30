@@ -21,7 +21,7 @@
 %global confdir         ext/redhat
 
 Name:           puppet
-Version:        3.2.2
+Version:        3.2.4
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
@@ -357,6 +357,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Fri Aug 30 2013 Sam Kottler <skottler@fedoraproject.org> - 3.2.4-1
+- Update to 3.2.4 to fix CVE-2013-4761 and CVE-4956
+
 * Thu Aug 29 2013 Sam Kottler <skottler@fedoraproject.org> - 3.2.2-1
 - Update to 3.2.2
 
