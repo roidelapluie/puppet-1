@@ -21,7 +21,7 @@
 %global confdir         ext/redhat
 
 Name:           puppet
-Version:        3.2.4
+Version:        3.3.0
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
@@ -110,7 +110,6 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
-patch -s -p1 < %{confdir}/rundir-perms.patch
 
 # Fix some rpmlint complaints
 for f in mac_automount.pp  mcx_dock_absent.pp  mcx_dock_default.pp \
@@ -357,6 +356,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Fri Sep 13 2013 Sam Kottler <skottler@fedoraproject.org> - 3.3.0-1
+- Update to 3.3.0 and remove the rundir-perms patch since it's no longer needed
+
 * Fri Aug 30 2013 Sam Kottler <skottler@fedoraproject.org> - 3.2.4-1
 - Update to 3.2.4 to fix CVE-2013-4761 and CVE-2013-4956
 
