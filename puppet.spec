@@ -21,7 +21,7 @@
 %global confdir         ext/redhat
 
 Name:           puppet
-Version:        3.3.0
+Version:        3.3.1
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
@@ -356,6 +356,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Mon Oct 7 2013 Orion Poplawski <orion@cora.nwra.com> - 3.3.1-1
+- Update to 3.3.1
+
 * Fri Sep 13 2013 Sam Kottler <skottler@fedoraproject.org> - 3.3.0-1
 - Update to 3.3.0 and remove the rundir-perms patch since it's no longer needed
 
