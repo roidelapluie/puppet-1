@@ -22,7 +22,7 @@
 
 Name:           puppet
 Version:        3.3.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -183,6 +183,12 @@ vimdir=%{buildroot}%{_datadir}/vim/vimfiles
 install -Dp -m0644 ext/vim/ftdetect/puppet.vim $vimdir/ftdetect/puppet.vim
 install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 
+# Install wrappers for SELinux
+install -Dp -m0755 start-puppet-wrapper %{buildroot}%{_bindir}/start-puppet-agent
+sed -i 's/@@COMMAND@@/agent/g' %{buildroot}%{_bindir}/start-puppet-agent
+install -Dp -m0755 start-puppet-wrapper %{buildroot}%{_bindir}/start-puppet-master
+sed -i 's/@@COMMAND@@/master/g' %{buildroot}%{_bindir}/start-puppet-agent
+
 %if 0%{?fedora} >= 15
 # Setup tmpfiles.d config
 mkdir -p %{buildroot}%{_sysconfdir}/tmpfiles.d
@@ -197,6 +203,8 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 %defattr(-, root, root, 0755)
 %doc LICENSE README.md examples
 %{_bindir}/puppet
+%{_bindir}/start-puppet-agent
+%{_bindir}/start-puppet-master
 %{_bindir}/extlookup2hiera
 %{puppet_libdir}/*
 %if 0%{?_with_systemd}
@@ -356,6 +364,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Fri Nov 1 2013 Lukas Zapletal <lzap+rpm[@]redhat.com> - 3.3.1-2
+- Added SELinux wrappers for daemon processes
+
 * Mon Oct 7 2013 Orion Poplawski <orion@cora.nwra.com> - 3.3.1-1
 - Update to 3.3.1
 
