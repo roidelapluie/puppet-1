@@ -30,6 +30,7 @@ Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.g
 Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 Source2:        puppet-nm-dispatcher
 Source3:        puppet-nm-dispatcher.systemd
+Source4:        start-puppet-wrapper
 
 Group:          System Environment/Base
 
@@ -184,9 +185,9 @@ install -Dp -m0644 ext/vim/ftdetect/puppet.vim $vimdir/ftdetect/puppet.vim
 install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 
 # Install wrappers for SELinux
-install -Dp -m0755 start-puppet-wrapper %{buildroot}%{_bindir}/start-puppet-agent
+install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-agent
 sed -i 's/@@COMMAND@@/agent/g' %{buildroot}%{_bindir}/start-puppet-agent
-install -Dp -m0755 start-puppet-wrapper %{buildroot}%{_bindir}/start-puppet-master
+install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-master
 sed -i 's/@@COMMAND@@/master/g' %{buildroot}%{_bindir}/start-puppet-agent
 
 %if 0%{?fedora} >= 15
