@@ -301,6 +301,17 @@ exit 0
 %if 0%{?_with_systemd}
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 %else
+# If there's a running puppet agent, restart it during upgrade. Fixes
+# BZ #1024538.
+if [ "$1" -ge 1 ]; then
+  pid="%{_localstatedir}/run/puppet/agent.pid"
+  if [ -e "$pid" ]; then
+    if ps aux | grep `cat "$pid"` | grep -v grep | awk '{ print $12 }' | grep -q sbin; then
+      (kill $(< "$pid") && rm -f "$pid" && \
+        /sbin/service puppet start) >/dev/null 2>&1 || :
+    fi
+  fi
+fi
 /sbin/chkconfig --add puppet || :
 %endif
 
