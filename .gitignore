@@ -5,3 +5,4 @@
 /puppet-*/
 /.build*.log
 /start-puppet-wrapper
+/23115-convert-nil-to-undef.patch

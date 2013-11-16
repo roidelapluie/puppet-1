@@ -22,7 +22,7 @@
 
 Name:           puppet
 Version:        3.3.1
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -84,6 +84,10 @@ Requires(postun): initscripts
 
 Requires: tar
 
+# http://projects.puppetlabs.com/issues/23115
+# https://bugzilla.redhat.com/show_bug.cgi?id=1028930
+Patch0: 23115-convert-nil-to-undef.patch
+
 %description
 Puppet lets you centrally manage every important aspect of your system using a
 cross-platform specification language that manages all the separate elements
@@ -111,6 +115,7 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
+%patch0 -p1
 
 # Fix some rpmlint complaints
 for f in mac_automount.pp  mcx_dock_absent.pp  mcx_dock_default.pp \
@@ -376,6 +381,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Sat Nov 16 2013 Sam Kottler <skottler@fedoraproject.org> - 3.3.1-3
+- Add patch to convert nil resource parameter values to undef (BZ#1028930)
+
 * Fri Nov 1 2013 Lukas Zapletal <lzap+rpm[@]redhat.com> - 3.3.1-2
 - Added SELinux wrappers for daemon processes
 

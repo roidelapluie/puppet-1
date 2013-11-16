@@ -1,3 +1,4 @@
+0a83c5398abfd1f5cb8f6f538dae3739  start-puppet-wrapper
 e553c381df75b24c8eda00ecc6dcef8a  puppet-3.3.1.tar.gz
 db515b3dc952ad3e1b2acacfb6578cf3  puppet-3.3.1.tar.gz.asc
-0a83c5398abfd1f5cb8f6f538dae3739  start-puppet-wrapper
+6e5d1e2f9dcb5cba5efa92cb018c25ac  23115-convert-nil-to-undef.patch
