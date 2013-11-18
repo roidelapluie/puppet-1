@@ -21,8 +21,8 @@
 %global confdir         ext/redhat
 
 Name:           puppet
-Version:        3.3.1
-Release:        3%{?dist}
+Version:        3.3.2
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -381,6 +381,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Mon Nov 18 2013 Sam Kottler <skottler@fedoraproject.org> - 3.3.2-1
+- Update to 3.3.2 (BZ#1031810)
+
 * Sat Nov 16 2013 Sam Kottler <skottler@fedoraproject.org> - 3.3.1-3
 - Add patch to convert nil resource parameter values to undef (BZ#1028930)
 
