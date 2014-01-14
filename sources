@@ -1,4 +1,4 @@
-bbbe1fcd38b6b520bf32576ad7931da0  puppet-3.3.2.tar.gz
-1c60142a38f96281fad69f932c5248e3  puppet-3.3.2.tar.gz.asc
-0a83c5398abfd1f5cb8f6f538dae3739  start-puppet-wrapper
 6e5d1e2f9dcb5cba5efa92cb018c25ac  23115-convert-nil-to-undef.patch
+0a83c5398abfd1f5cb8f6f538dae3739  start-puppet-wrapper
+e8d77839c0e24f51604eed3fb6e8b485  puppet-3.4.2.tar.gz.asc
+cbe27b5e333b87b91578778d1fa21ca4  puppet-3.4.2.tar.gz
