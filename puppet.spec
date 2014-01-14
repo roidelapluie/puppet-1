@@ -21,7 +21,7 @@
 %global confdir         ext/redhat
 
 Name:           puppet
-Version:        3.3.2
+Version:        3.4.2
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
@@ -84,10 +84,6 @@ Requires(postun): initscripts
 
 Requires: tar
 
-# http://projects.puppetlabs.com/issues/23115
-# https://bugzilla.redhat.com/show_bug.cgi?id=1028930
-Patch0: 23115-convert-nil-to-undef.patch
-
 %description
 Puppet lets you centrally manage every important aspect of your system using a
 cross-platform specification language that manages all the separate elements
@@ -115,18 +111,6 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
-%patch0 -p1
-
-# Fix some rpmlint complaints
-for f in mac_automount.pp  mcx_dock_absent.pp  mcx_dock_default.pp \
-    mcx_dock_full.pp mcx_dock_invalid.pp mcx_nogroup.pp \
-    mcx_notexists_absent.pp; do
-    sed -i -e'1d' examples/$f
-    chmod a-x examples/$f
-done
-for f in external/nagios.rb relationship.rb; do
-    sed -i -e '1d' lib/puppet/$f
-done
 chmod +x ext/puppet-load.rb ext/regexp_nodes/regexp_nodes.rb
 
 %build
@@ -144,7 +128,8 @@ install -d -m0750 %{buildroot}%{_localstatedir}/log/puppet
 
 %if 0%{?_with_systemd}
 %{__install} -d -m0755  %{buildroot}%{_unitdir}
-install -Dp -m0644 ext/systemd/puppetagent.service %{buildroot}%{_unitdir}/puppetagent.service
+install -Dp -m0644 ext/systemd/puppet.service %{buildroot}%{_unitdir}/puppet.service
+ln -s %{_unitdir}/puppet.service %{buildroot}%{_unitdir}/puppetagent.service
 install -Dp -m0644 ext/systemd/puppetmaster.service %{buildroot}%{_unitdir}/puppetmaster.service
 %else
 install -Dp -m0644 %{confdir}/client.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/puppet
@@ -214,6 +199,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 %{_bindir}/extlookup2hiera
 %{puppet_libdir}/*
 %if 0%{?_with_systemd}
+%{_unitdir}/puppet.service
 %{_unitdir}/puppetagent.service
 %else
 %{_initrddir}/puppet
@@ -330,8 +316,8 @@ fi
 %preun
 %if 0%{?_with_systemd}
 if [ "$1" -eq 0 ] ; then
-  /bin/systemctl --no-reload disable puppetagent.service > /dev/null 2>&1 || :
-  /bin/systemctl stop puppetagent.service > /dev/null 2>&1 || :
+  /bin/systemctl --no-reload disable puppet.service > /dev/null 2>&1 || :
+  /bin/systemctl stop puppet.service > /dev/null 2>&1 || :
   /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 fi
 %else
@@ -358,7 +344,7 @@ fi
 %postun
 %if 0%{?_with_systemd}
 if [ $1 -ge 1 ] ; then
-  /bin/systemctl try-restart puppetagent.service >/dev/null 2>&1 || :
+  /bin/systemctl try-restart puppet.service >/dev/null 2>&1 || :
 fi
 %else
 if [ "$1" -ge 1 ]; then
@@ -381,6 +367,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Tue Jan 14 2014 Sam Kottler <skottler@fedoraproject.org> - 3.4.2-1
+- Update to 3.4.2 to mitigate CVE-2013-4969 (BZ#1047792)
+
 * Mon Nov 18 2013 Sam Kottler <skottler@fedoraproject.org> - 3.3.2-1
 - Update to 3.3.2 (BZ#1031810)
 
