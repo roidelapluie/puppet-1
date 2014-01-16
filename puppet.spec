@@ -11,13 +11,7 @@
 %global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["sitelibdir"]')
 %endif
 
-# F-17 also ships with systemd; package/use systemd files in this case
-%if 0%{?fedora} > 18
 %global _with_systemd 1
-%else
-%global _with_systemd 0
-%endif
-
 %global confdir         ext/redhat
 
 Name:           puppet
@@ -43,11 +37,7 @@ BuildArch:      noarch
 %if 0%{?rhel} && 0%{?rhel} <= 6
 Requires:       ruby(abi) = 1.8
 %else
-%if 0%{?fedora} <= 18
-Requires:       ruby(abi) = 1.9.1
-%else
 Requires:       ruby(release)
-%endif
 %endif
 Requires:       ruby(shadow)
 
