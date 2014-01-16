@@ -17,7 +17,6 @@
 Name:           puppet
 Version:        3.4.2
 Release:        2%{?dist}
-Group:          System Environment/Base
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
