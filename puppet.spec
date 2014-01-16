@@ -16,7 +16,8 @@
 
 Name:           puppet
 Version:        3.4.2
-Release:        1%{?dist}
+Release:        2%{?dist}
+Group:          System Environment/Base
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -357,6 +358,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Thu Jan 16 2014 Sam Kottler <skottler@fedoraproject.org> - 3.4.2-2
+- Remove F18 conditionals now that it's EOL
+
 * Tue Jan 14 2014 Sam Kottler <skottler@fedoraproject.org> - 3.4.2-1
 - Update to 3.4.2 to mitigate CVE-2013-4969 (BZ#1047792)
 
