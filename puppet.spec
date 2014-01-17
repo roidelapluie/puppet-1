@@ -13,10 +13,11 @@
 
 %global _with_systemd 1
 %global confdir         ext/redhat
+%global pending_upgrade_file /tmp/puppet_pending_upgrade
 
 Name:           puppet
 Version:        3.4.2
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -310,6 +311,18 @@ if [ "$1" -eq 0 ] ; then
   /bin/systemctl stop puppet.service > /dev/null 2>&1 || :
   /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 fi
+
+if [ "$1" == "1" ]; then
+  /bin/systemctl is-enabled puppetagent.service > /dev/null 2>&1
+  if [ "$?" == "0" ]; then
+    /bin/systemctl /bin/systemctl --no-reload disable puppetagent.service > /dev/null 2>&1 ||:
+    /bin/systemctl stop puppetagent.service > /dev/null 2>&1 ||:
+    /bin/systemctl daemon-reload >/dev/null 2>&1 ||:
+    if [ ! -e %{pending_upgrade_file} ]; then
+      touch %{pending_upgrade_file}
+    fi
+  fi
+fi
 %else
 if [ "$1" = 0 ] ; then
   /sbin/service puppet stop >/dev/null 2>&1
@@ -335,6 +348,12 @@ fi
 %if 0%{?_with_systemd}
 if [ $1 -ge 1 ] ; then
   /bin/systemctl try-restart puppet.service >/dev/null 2>&1 || :
+  if [ -e %{pending_upgrade_file} ]; then
+    /bin/systemctl --no-reload enable puppet.service > /dev/null 2>&1 ||:
+    /bin/systemctl start puppet.service > /dev/null 2>&1 ||:
+    /bin/systemctl daemon-reload >/dev/null 2>&1 ||:
+    rm %{pending_upgrade_file}
+  fi
 fi
 %else
 if [ "$1" -ge 1 ]; then
@@ -357,6 +376,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Fri Jan 17 2014 Sam Kottler <skottler@fedoraproject.org> - 3.4.2-3
+- Enable puppet.service during upgrade if puppetagent.service was previously enabled
+
 * Thu Jan 16 2014 Sam Kottler <skottler@fedoraproject.org> - 3.4.2-2
 - Remove F18 conditionals now that it's EOL
 
