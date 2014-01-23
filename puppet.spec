@@ -13,7 +13,8 @@
 
 %global _with_systemd 1
 %global confdir         ext/redhat
-%global pending_upgrade_file /tmp/puppet_pending_upgrade
+%global pending_upgrade_path %{_localstatedir}/lib/rpm-state/puppet
+%global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
 Name:           puppet
 Version:        3.4.2
@@ -319,6 +320,9 @@ if [ "$1" == "1" ]; then
     /bin/systemctl stop puppetagent.service > /dev/null 2>&1 ||:
     /bin/systemctl daemon-reload >/dev/null 2>&1 ||:
     if [ ! -e %{pending_upgrade_file} ]; then
+      if [ ! -d %{pending_upgrade_path} ]; then
+        mkdir %{pending_upgrade_path}
+      end
       touch %{pending_upgrade_file}
     fi
   fi
