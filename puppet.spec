@@ -18,7 +18,7 @@
 
 Name:           puppet
 Version:        3.4.2
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -380,6 +380,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Thu Jan 23 2014 Sam Kottler <skottler@fedoraproject.org> - 3.4.2-4
+- Use localstatedir macro instead of /tmp
+
 * Fri Jan 17 2014 Sam Kottler <skottler@fedoraproject.org> - 3.4.2-3
 - Enable puppet.service during upgrade if puppetagent.service was previously enabled
 
