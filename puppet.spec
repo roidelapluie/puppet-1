@@ -57,6 +57,7 @@ Requires:       ruby
 
 Requires:       facter >= 1.6.6
 Requires:       hiera >= 1.0.0
+Requires:       rubygem(rgen)
 Obsoletes:      hiera-puppet < 1.0.0-2
 Provides:       hiera-puppet = %{version}-%{release}
 
