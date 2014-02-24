@@ -17,8 +17,8 @@
 %global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
 Name:           puppet
-Version:        3.4.2
-Release:        5%{?dist}
+Version:        3.4.3
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -381,6 +381,9 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Mon Feb 24 2014 Sam Kottler <skottler@fedoraproject.org> - 3.4.3-1
+- Update to 3.4.3
+
 * Wed Jan 29 2014 Sam Kottler <skottler@fedoraproject.org> - 3.4.2-5
 - Add rubygem(rgen) runtime dependency
 
