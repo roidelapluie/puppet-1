@@ -18,7 +18,7 @@
 
 Name:           puppet
 Version:        3.4.3
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -167,11 +167,15 @@ vimdir=%{buildroot}%{_datadir}/vim/vimfiles
 install -Dp -m0644 ext/vim/ftdetect/puppet.vim $vimdir/ftdetect/puppet.vim
 install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 
-# Install wrappers for SELinux
+# Install wrappers for SELinux - TODO: push this upstream
 install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-agent
-sed -i 's/@@COMMAND@@/agent/g' %{buildroot}%{_bindir}/start-puppet-agent
 install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-master
-sed -i 's/@@COMMAND@@/master/g' %{buildroot}%{_bindir}/start-puppet-agent
+%if 0%{?_with_systemd}
+sed -i 's|^ExecStart=/usr/bin/puppet|ExecStart=/usr/bin/start-puppet-master|' \
+  %{buildroot}%{_unitdir}/puppetmaster.service
+sed -i 's|^ExecStart=/usr/bin/puppet|ExecStart=/usr/bin/start-puppet-agent|' \
+  %{buildroot}%{_unitdir}/puppet.service
+%endif
 
 %if 0%{?fedora} >= 15
 # Setup tmpfiles.d config
@@ -381,6 +385,10 @@ fi
 rm -rf %{buildroot}
 
 %changelog
+* Tue Apr 08 2014 Lukas Zapletal <lzap+rpm@redhat.com> 3.4.3-2
+- Fixed systemd unit files - wrappers are now in use and master starts
+  with correct context
+
 * Mon Feb 24 2014 Sam Kottler <skottler@fedoraproject.org> - 3.4.3-1
 - Update to 3.4.3
 
