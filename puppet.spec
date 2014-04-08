@@ -18,7 +18,7 @@
 
 Name:           puppet
 Version:        3.4.3
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -287,7 +287,7 @@ exit 0
 
 %post
 %if 0%{?_with_systemd}
-/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+/bin/systemctl daemon-reload >/dev/null 2>&1
 %else
 # If there's a running puppet agent, restart it during upgrade. Fixes
 # BZ #1024538.
@@ -296,95 +296,100 @@ if [ "$1" -ge 1 ]; then
   if [ -e "$pid" ]; then
     if ps aux | grep `cat "$pid"` | grep -v grep | awk '{ print $12 }' | grep -q sbin; then
       (kill $(< "$pid") && rm -f "$pid" && \
-        /sbin/service puppet start) >/dev/null 2>&1 || :
+        /sbin/service puppet start) >/dev/null 2>&1
     fi
   fi
 fi
-/sbin/chkconfig --add puppet || :
+/sbin/chkconfig --add puppet
 %endif
+exit 0
 
 %post server
 %if 0%{?_with_systemd}
-/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+/bin/systemctl daemon-reload >/dev/null 2>&1
 %else
-/sbin/chkconfig --add puppetmaster || :
+/sbin/chkconfig --add puppetmaster
 %endif
+exit 0
 
 %preun
 %if 0%{?_with_systemd}
 if [ "$1" -eq 0 ] ; then
-  /bin/systemctl --no-reload disable puppet.service > /dev/null 2>&1 || :
-  /bin/systemctl stop puppet.service > /dev/null 2>&1 || :
-  /bin/systemctl daemon-reload >/dev/null 2>&1 || :
+  /bin/systemctl --no-reload disable puppet.service > /dev/null 2>&1
+  /bin/systemctl stop puppet.service > /dev/null 2>&1
+  /bin/systemctl daemon-reload >/dev/null 2>&1
 fi
 
-if [ "$1" == "1" ]; then
+if [ "$1" -eq 1 ]; then
   /bin/systemctl is-enabled puppetagent.service > /dev/null 2>&1
-  if [ "$?" == "0" ]; then
-    /bin/systemctl /bin/systemctl --no-reload disable puppetagent.service > /dev/null 2>&1 ||:
-    /bin/systemctl stop puppetagent.service > /dev/null 2>&1 ||:
-    /bin/systemctl daemon-reload >/dev/null 2>&1 ||:
-    if [ ! -e %{pending_upgrade_file} ]; then
-      if [ ! -d %{pending_upgrade_path} ]; then
-        mkdir %{pending_upgrade_path}
-      end
-      touch %{pending_upgrade_file}
-    fi
+  if [ "$?" -eq 0 ]; then
+    /bin/systemctl /bin/systemctl --no-reload disable puppetagent.service > /dev/null 2>&1
+    /bin/systemctl stop puppetagent.service > /dev/null 2>&1
+    /bin/systemctl daemon-reload >/dev/null 2>&1
+    install -D -m 644 /dev/null %{pending_upgrade_file} > /dev/null 2>&1
   fi
 fi
 %else
-if [ "$1" = 0 ] ; then
+if [ "$1" -eq 0 ] ; then
   /sbin/service puppet stop >/dev/null 2>&1
-  /sbin/chkconfig --del puppet || :
+  /sbin/chkconfig --del puppet
 fi
 %endif
+exit 0
 
 %preun server
 %if 0%{?_with_systemd}
-if [ $1 -eq 0 ] ; then
-  /bin/systemctl --no-reload disable puppetmaster.service > /dev/null 2>&1 || :
-  /bin/systemctl stop puppetmaster.service > /dev/null 2>&1 || :
-  /bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ "$1" -eq 0 ] ; then
+  /bin/systemctl --no-reload disable puppetmaster.service > /dev/null 2>&1
+  /bin/systemctl stop puppetmaster.service > /dev/null 2>&1
+  /bin/systemctl daemon-reload >/dev/null 2>&1
 fi
 %else
-if [ "$1" = 0 ] ; then
+if [ "$1" -eq 0 ] ; then
   /sbin/service puppetmaster stop >/dev/null 2>&1
-  /sbin/chkconfig --del puppetmaster || :
+  /sbin/chkconfig --del puppetmaster
 fi
 %endif
+exit 0
 
 %postun
 %if 0%{?_with_systemd}
-if [ $1 -ge 1 ] ; then
-  /bin/systemctl try-restart puppet.service >/dev/null 2>&1 || :
+if [ "$1" -ge 1 ] ; then
+  /bin/systemctl try-restart puppet.service >/dev/null 2>&1
   if [ -e %{pending_upgrade_file} ]; then
-    /bin/systemctl --no-reload enable puppet.service > /dev/null 2>&1 ||:
-    /bin/systemctl start puppet.service > /dev/null 2>&1 ||:
-    /bin/systemctl daemon-reload >/dev/null 2>&1 ||:
+    /bin/systemctl --no-reload enable puppet.service > /dev/null 2>&1
+    /bin/systemctl start puppet.service > /dev/null 2>&1
+    /bin/systemctl daemon-reload >/dev/null 2>&1
     rm %{pending_upgrade_file}
   fi
 fi
 %else
 if [ "$1" -ge 1 ]; then
-  /sbin/service puppet condrestart >/dev/null 2>&1 || :
+  /sbin/service puppet condrestart >/dev/null 2>&1
 fi
 %endif
+exit 0
 
 %postun server
 %if 0%{?_with_systemd}
-if [ $1 -ge 1 ] ; then
-  /bin/systemctl try-restart puppetmaster.service >/dev/null 2>&1 || :
+if [ "$1" -ge 1 ] ; then
+  /bin/systemctl try-restart puppetmaster.service >/dev/null 2>&1
 fi
 %else
 if [ "$1" -ge 1 ]; then
-  /sbin/service puppetmaster condrestart >/dev/null 2>&1 || :
+  /sbin/service puppetmaster condrestart >/dev/null 2>&1
 fi
 %endif
+exit 0
 
 %clean
 rm -rf %{buildroot}
 
 %changelog
+* Tue Apr 08 2014 Lukas Zapletal <lzap+rpm@redhat.com> 3.4.3-3
+- RHBZ#1070395 - fixed error in postun scriplet
+- Reformatted all scriplets and corrected exit codes
+
 * Tue Apr 08 2014 Lukas Zapletal <lzap+rpm@redhat.com> 3.4.3-2
 - Fixed systemd unit files - wrappers are now in use and master starts
   with correct context
