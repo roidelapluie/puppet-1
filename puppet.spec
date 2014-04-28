@@ -17,8 +17,8 @@
 %global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
 Name:           puppet
-Version:        3.4.3
-Release:        3%{?dist}
+Version:        3.5.1
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -386,6 +386,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Mon Apr 28 2014 Sam Kottler <skottler@fedoraproject.org.org> 3.5.1-1
+- Update to 3.5.1
+
 * Tue Apr 08 2014 Lukas Zapletal <lzap+rpm@redhat.com> 3.4.3-3
 - RHBZ#1070395 - fixed error in postun scriplet
 - Reformatted all scriplets and corrected exit codes
