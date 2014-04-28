@@ -386,7 +386,7 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
-* Mon Apr 28 2014 Sam Kottler <skottler@fedoraproject.org.org> 3.5.1-1
+* Mon Apr 28 2014 Sam Kottler <skottler@fedoraproject.org> 3.5.1-1
 - Update to 3.5.1
 
 * Tue Apr 08 2014 Lukas Zapletal <lzap+rpm@redhat.com> 3.4.3-3
