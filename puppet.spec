@@ -1,11 +1,9 @@
 # Augeas and SELinux requirements may be disabled at build time by passing
 # --without augeas and/or --without selinux to rpmbuild or mock
 
-# F-17 and above have ruby-1.9.x, and place libs in a different location
-
 # Specifically not using systemd on F18 as it's technically a break between
 # using SystemV on 2.7.x and Systemd on 3.1.0.
-%if 0%{?fedora} >= 17 || 0%{?rhel} >= 7
+%if 0%{?fedora} || 0%{?rhel} >= 7
 %global puppet_libdir   %{ruby_vendorlibdir}
 %else
 %global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["sitelibdir"]')
@@ -17,7 +15,7 @@
 %global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
 Name:           puppet
-Version:        3.5.1
+Version:        3.6.0
 Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
@@ -54,6 +52,8 @@ Requires:       ruby
 %{!?_without_selinux:Requires: libselinux-ruby, libselinux-utils}
 %endif
 %endif
+
+BuildRequires:  hiera >= 1.0.0
 
 Requires:       facter >= 1.6.6
 Requires:       hiera >= 1.0.0
@@ -386,6 +386,10 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Sun May 18 2014 Sam Kottler <skottler@fedoraproject.org> 3.6.0-1
+- Remove logic specific to unsupported versions of Fedora
+- Update to 3.6.0
+
 * Mon Apr 28 2014 Sam Kottler <skottler@fedoraproject.org> 3.5.1-1
 - Update to 3.5.1
 
