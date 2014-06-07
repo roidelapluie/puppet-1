@@ -16,7 +16,7 @@
 
 Name:           puppet
 Version:        3.6.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -386,6 +386,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.6.0-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
 * Sun May 18 2014 Sam Kottler <skottler@fedoraproject.org> 3.6.0-1
 - Remove logic specific to unsupported versions of Fedora
 - Update to 3.6.0
