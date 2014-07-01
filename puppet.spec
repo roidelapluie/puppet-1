@@ -16,7 +16,7 @@
 
 Name:           puppet
 Version:        3.6.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -25,6 +25,7 @@ Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.g
 Source2:        puppet-nm-dispatcher
 Source3:        puppet-nm-dispatcher.systemd
 Source4:        start-puppet-wrapper
+Patch0:         yum_proxy_none_.patch
 
 Group:          System Environment/Base
 
@@ -104,6 +105,7 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
+%patch0 -p1
 chmod +x ext/puppet-load.rb ext/regexp_nodes/regexp_nodes.rb
 
 %build
@@ -386,6 +388,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Mon Jun 30 2014 Pádraig Brady <pbrady@redhat.com> - 3.6.2-2
+- Allow yumrepo proxy attribute to be set to _none_
+
 * Mon Jun 16 2014 Orion Poplawski <orion@cora.nwra.com> - 3.6.2-1
 - Update to 3.6.2
 
