@@ -169,9 +169,10 @@ vimdir=%{buildroot}%{_datadir}/vim/vimfiles
 install -Dp -m0644 ext/vim/ftdetect/puppet.vim $vimdir/ftdetect/puppet.vim
 install -Dp -m0644 ext/vim/syntax/puppet.vim $vimdir/syntax/puppet.vim
 
-# Install wrappers for SELinux - TODO: push this upstream
+# Install wrappers for SELinux
 install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-agent
 install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-master
+install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-ca
 %if 0%{?_with_systemd}
 sed -i 's|^ExecStart=/usr/bin/puppet|ExecStart=/usr/bin/start-puppet-master|' \
   %{buildroot}%{_unitdir}/puppetmaster.service
