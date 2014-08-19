@@ -16,7 +16,7 @@
 
 Name:           puppet
 Version:        3.6.2
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -194,8 +194,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 %defattr(-, root, root, 0755)
 %doc LICENSE README.md examples
 %{_bindir}/puppet
-%{_bindir}/start-puppet-agent
-%{_bindir}/start-puppet-master
+%{_bindir}/start-puppet-*
 %{_bindir}/extlookup2hiera
 %{puppet_libdir}/*
 %if 0%{?_with_systemd}
@@ -389,6 +388,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Tue Aug 19 2014 Lukas Zapletal <lzap+rpm@redhat.com> 3.6.2-3
+- 1131398 - added start-puppet-ca SELinux wrapper binary
+
 * Mon Jun 30 2014 Pádraig Brady <pbrady@redhat.com> - 3.6.2-2
 - Allow yumrepo proxy attribute to be set to _none_
 
