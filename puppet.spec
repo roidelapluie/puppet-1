@@ -9,14 +9,17 @@
 %global puppet_libdir   %(ruby -rrbconfig -e 'puts RbConfig::CONFIG["sitelibdir"]')
 %endif
 
+%if 0%{?fedora} > 18 || 0%{?rhel} >= 7 || 0%{?suse_version}
 %global _with_systemd 1
+%endif
+
 %global confdir         ext/redhat
 %global pending_upgrade_path %{_localstatedir}/lib/rpm-state/puppet
 %global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
 Name:           puppet
-Version:        3.6.2
-Release:        3%{?dist}
+Version:        3.7.1
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -25,7 +28,6 @@ Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.g
 Source2:        puppet-nm-dispatcher
 Source3:        puppet-nm-dispatcher.systemd
 Source4:        start-puppet-wrapper
-Patch0:         yum_proxy_none_.patch
 
 Group:          System Environment/Base
 
@@ -33,6 +35,8 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  facter >= 1.6.6
 BuildRequires:  ruby-devel >= 1.8.7
+# ruby-devel does not require the base package, but requires -libs instead
+BuildRequires:  ruby >= 1.8.7
 
 BuildArch:      noarch
 %if 0%{?rhel} && 0%{?rhel} <= 6
@@ -41,6 +45,8 @@ Requires:       ruby(abi) = 1.8
 Requires:       ruby(release)
 %endif
 Requires:       ruby(shadow)
+
+Requires:       rubygem(json)
 
 # Prevents jruby from being pulled in by dependencies (BZ #985208)
 Requires:       ruby
@@ -88,6 +94,11 @@ along with obviously discrete elements like packages, services, and files.
 Group:          System Environment/Base
 Summary:        Server for the puppet system management tool
 Requires:       puppet = %{version}-%{release}
+Requires:       mod_passenger
+Requires:       mod_ssl
+Requires:       puppet-dashboard
+Requires:       puppetdb
+Requires:       puppetdb-terminus
 %if 0%{?_with_systemd}
 Requires(post): systemd
 Requires(preun): systemd
@@ -105,7 +116,6 @@ The server can also function as a certificate authority and file server.
 
 %prep
 %setup -q
-%patch0 -p1
 chmod +x ext/puppet-load.rb ext/regexp_nodes/regexp_nodes.rb
 
 %build
@@ -190,6 +200,14 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 # Create puppet modules directory for puppet module tool
 mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 
+cat > %{buildroot}%{_sysconfdir}/%{name}/routes.yaml << EOF
+---
+master:
+  facts:
+    terminus: puppetdb
+    cache: yaml
+EOF
+
 %files
 %defattr(-, root, root, 0755)
 %doc LICENSE README.md examples
@@ -267,6 +285,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 %{_initrddir}/puppetmaster
 %{_initrddir}/puppetqueue
 %config(noreplace) %{_sysconfdir}/sysconfig/puppetmaster
+%config(noreplace) %{_sysconfdir}/puppet/routes.yaml
 %endif
 %config(noreplace) %{_sysconfdir}/puppet/fileserver.conf
 %dir %{_sysconfdir}/puppet/manifests
@@ -388,6 +407,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Wed Sep 17 2014 Jeroen van Meeuwen <vanmeeuwen@kolabsys.com> - 3.7.1-1
+- Update to 3.7.1
+
 * Tue Aug 19 2014 Lukas Zapletal <lzap+rpm@redhat.com> 3.6.2-3
 - 1131398 - added start-puppet-ca SELinux wrapper binary
 
