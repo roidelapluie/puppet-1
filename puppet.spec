@@ -285,9 +285,9 @@ EOF
 %{_initrddir}/puppetmaster
 %{_initrddir}/puppetqueue
 %config(noreplace) %{_sysconfdir}/sysconfig/puppetmaster
-%config(noreplace) %{_sysconfdir}/puppet/routes.yaml
 %endif
 %config(noreplace) %{_sysconfdir}/puppet/fileserver.conf
+%config(noreplace) %{_sysconfdir}/puppet/routes.yaml
 %dir %{_sysconfdir}/puppet/manifests
 %{_mandir}/man8/puppet-kick.8.gz
 %{_mandir}/man8/puppet-master.8.gz
