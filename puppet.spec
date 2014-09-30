@@ -19,7 +19,7 @@
 
 Name:           puppet
 Version:        3.7.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -394,7 +394,7 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
-* Tue Sep 30 2014 Orion Poplawski <orion@cora.nwra.com> - 3.7.1-1
+* Tue Sep 30 2014 Orion Poplawski <orion@cora.nwra.com> - 3.7.1-2
 - Drop server deps and configuration changes (bug #1144298)
 
 * Wed Sep 17 2014 Jeroen van Meeuwen <vanmeeuwen@kolabsys.com> - 3.7.1-1
