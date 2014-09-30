@@ -94,11 +94,6 @@ along with obviously discrete elements like packages, services, and files.
 Group:          System Environment/Base
 Summary:        Server for the puppet system management tool
 Requires:       puppet = %{version}-%{release}
-Requires:       mod_passenger
-Requires:       mod_ssl
-Requires:       puppet-dashboard
-Requires:       puppetdb
-Requires:       puppetdb-terminus
 %if 0%{?_with_systemd}
 Requires(post): systemd
 Requires(preun): systemd
@@ -200,13 +195,6 @@ echo "D /var/run/%{name} 0755 %{name} %{name} -" > \
 # Create puppet modules directory for puppet module tool
 mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 
-cat > %{buildroot}%{_sysconfdir}/%{name}/routes.yaml << EOF
----
-master:
-  facts:
-    terminus: puppetdb
-    cache: yaml
-EOF
 
 %files
 %defattr(-, root, root, 0755)
@@ -287,7 +275,6 @@ EOF
 %config(noreplace) %{_sysconfdir}/sysconfig/puppetmaster
 %endif
 %config(noreplace) %{_sysconfdir}/puppet/fileserver.conf
-%config(noreplace) %{_sysconfdir}/puppet/routes.yaml
 %dir %{_sysconfdir}/puppet/manifests
 %{_mandir}/man8/puppet-kick.8.gz
 %{_mandir}/man8/puppet-master.8.gz
@@ -407,6 +394,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Tue Sep 30 2014 Orion Poplawski <orion@cora.nwra.com> - 3.7.1-1
+- Drop server deps and configuration changes (bug #1144298)
+
 * Wed Sep 17 2014 Jeroen van Meeuwen <vanmeeuwen@kolabsys.com> - 3.7.1-1
 - Update to 3.7.1
 
