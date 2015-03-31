@@ -19,7 +19,7 @@
 
 Name:           puppet
 Version:        3.7.5
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -47,6 +47,7 @@ Requires:       ruby(release)
 Requires:       ruby(shadow)
 
 Requires:       rubygem(json)
+Requires:       rubygem(safe_yaml)
 
 # Prevents jruby from being pulled in by dependencies (BZ #985208)
 Requires:       ruby
@@ -114,6 +115,9 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 chmod +x ext/puppet-load.rb ext/regexp_nodes/regexp_nodes.rb
+# Unbundle
+rm -r lib/puppet/vendor/*
+echo "require 'safe_yaml'" > lib/puppet/vendor/require_vendored.rb
 
 %build
 # Nothing to build
@@ -369,6 +373,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Tue Mar 31 2015 Orion Poplawski <orion@cora.nwra.com> - 3.7.5-2
+- Unbundle libs (bug #1198366)
+
 * Tue Mar 31 2015 Orion Poplawski <orion@cora.nwra.com> - 3.7.5-1
 - Update to 3.7.5
 
