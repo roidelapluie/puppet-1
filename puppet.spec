@@ -18,8 +18,8 @@
 %global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
 Name:           puppet
-Version:        3.7.1
-Release:        3%{?dist}
+Version:        3.7.5
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -369,6 +369,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Tue Mar 31 2015 Orion Poplawski <orion@cora.nwra.com> - 3.7.5-1
+- Update to 3.7.5
+
 * Sat Feb 28 2015 Haïkel Guémar <hguemar@fedoraproject.org> - 3.7.1-3
 - Use systemd macros (RHBZ #1197239)
 
