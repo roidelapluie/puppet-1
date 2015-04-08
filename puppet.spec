@@ -13,22 +13,28 @@
 %global _with_systemd 1
 %endif
 
-%global confdir         ext/redhat
+%global confdir         conf
 %global pending_upgrade_path %{_localstatedir}/lib/rpm-state/puppet
 %global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
+%global prerelease_tag rc1
+
 Name:           puppet
-Version:        3.7.5
-Release:        4%{?dist}
+Version:        4.0.0
+Release:        0.1%{prerelease_tag}%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
-Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz
-Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
+Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}-%{prerelease_tag}.tar.gz
+Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}-%{prerelease_tag}.tar.gz.asc
 Source2:        puppet-nm-dispatcher
 Source3:        puppet-nm-dispatcher.systemd
 Source4:        start-puppet-wrapper
 
+# Puppetlabs messed up with default paths
+Patch01:        0001-Fix-puppet-paths.patch
+# systemd is the default init for all supported Fedora releases
+Patch02:        0002-make-systemd-the-default-init-for-fedora-in-puppet.patch
 Group:          System Environment/Base
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -114,10 +120,11 @@ Provides the central puppet server daemon which provides manifests to clients.
 The server can also function as a certificate authority and file server.
 
 %prep
-%setup -q
-chmod +x ext/puppet-load.rb ext/regexp_nodes/regexp_nodes.rb
+%setup -q -n %{name}-%{version}-%{prerelease_tag}
+%patch01 -p1 -b .paths
+%patch02 -p1 -b .systemd
 # Unbundle
-rm -r lib/puppet/vendor/*{pathspec,rgen,safe_yaml}*
+rm -r lib/puppet/vendor/*{pathspec,rgen}*
 echo "require 'safe_yaml'" > lib/puppet/vendor/require_vendored.rb
 
 %build
@@ -125,13 +132,20 @@ echo "require 'safe_yaml'" > lib/puppet/vendor/require_vendored.rb
 
 %install
 rm -rf %{buildroot}
-ruby install.rb --destdir=%{buildroot} --quick --no-rdoc --sitelibdir=%{puppet_libdir}
+ruby install.rb --destdir=%{buildroot} \
+     --configdir=%{_sysconfdir}/puppet \
+     --bindir=%{_bindir} --vardir=%{_localstatedir}/cache/puppet \
+     --logdir=%{_localstatedir}/log/puppet \
+     --rundir=%{_localstatedir}/log/puppet \
+     --quick --no-rdoc --sitelibdir=%{puppet_libdir}
+
 
 install -d -m0755 %{buildroot}%{_sysconfdir}/puppet/manifests
 install -d -m0755 %{buildroot}%{_datadir}/%{name}/modules
 install -d -m0755 %{buildroot}%{_localstatedir}/lib/puppet
 install -d -m0755 %{buildroot}%{_localstatedir}/run/puppet
 install -d -m0750 %{buildroot}%{_localstatedir}/log/puppet
+install -d -m0750 %{buildroot}%{_localstatedir}/cache/puppet
 
 %if 0%{?_with_systemd}
 %{__install} -d -m0755  %{buildroot}%{_unitdir}
@@ -146,9 +160,10 @@ install -Dp -m0755 %{confdir}/server.init %{buildroot}%{_initrddir}/puppetmaster
 install -Dp -m0755 %{confdir}/queue.init %{buildroot}%{_initrddir}/puppetqueue
 %endif
 
+install -Dp -m0644 %{confdir}/auth.conf %{buildroot}%{_sysconfdir}/puppet/auth.conf
 install -Dp -m0644 %{confdir}/fileserver.conf %{buildroot}%{_sysconfdir}/puppet/fileserver.conf
 install -Dp -m0644 %{confdir}/puppet.conf %{buildroot}%{_sysconfdir}/puppet/puppet.conf
-install -Dp -m0644 %{confdir}/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/puppet
+install -Dp -m0644 ext/redhat/logrotate %{buildroot}%{_sysconfdir}/logrotate.d/puppet
 
 # Install a NetworkManager dispatcher script to pickup changes to
 # /etc/resolv.conf and such (https://bugzilla.redhat.com/532085).
@@ -186,9 +201,9 @@ install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-agent
 install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-master
 install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-ca
 %if 0%{?_with_systemd}
-sed -i 's|^ExecStart=/usr/bin/puppet|ExecStart=/usr/bin/start-puppet-master|' \
+sed -i 's|^ExecStart=/opt/puppetlabs/puppet/bin/puppet|ExecStart=/usr/bin/start-puppet-master|' \
   %{buildroot}%{_unitdir}/puppetmaster.service
-sed -i 's|^ExecStart=/usr/bin/puppet|ExecStart=/usr/bin/start-puppet-agent|' \
+sed -i 's|^ExecStart=/opt/puppetlabs/puppet/bin/puppet|ExecStart=/usr/bin/start-puppet-agent|' \
   %{buildroot}%{_unitdir}/puppet.service
 %endif
 
@@ -237,6 +252,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 %attr(-, puppet, puppet) %{_localstatedir}/run/puppet
 %attr(0750, puppet, puppet) %{_localstatedir}/log/puppet
 %attr(-, puppet, puppet) %{_localstatedir}/lib/puppet
+%attr(0750, puppet, puppet) %{_localstatedir}/cache/puppet
 %{_mandir}/man5/puppet.conf.5.gz
 %{_mandir}/man8/puppet.8.gz
 %{_mandir}/man8/puppet-agent.8.gz
@@ -256,9 +272,10 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 %{_mandir}/man8/puppet-filebucket.8.gz
 %{_mandir}/man8/puppet-help.8.gz
 %{_mandir}/man8/puppet-inspect.8.gz
-%{_mandir}/man8/puppet-instrumentation_data.8.gz
-%{_mandir}/man8/puppet-instrumentation_listener.8.gz
-%{_mandir}/man8/puppet-instrumentation_probe.8.gz
+#%{_mandir}/man8/puppet-instrumentation_data.8.gz
+#%{_mandir}/man8/puppet-instrumentation_listener.8.gz
+#%{_mandir}/man8/puppet-instrumentation_probe.8.gz
+%{_mandir}/man8/puppet-epp.8.gz
 %{_mandir}/man8/puppet-key.8.gz
 %{_mandir}/man8/puppet-man.8.gz
 %{_mandir}/man8/puppet-module.8.gz
@@ -268,7 +285,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 %{_mandir}/man8/puppet-report.8.gz
 %{_mandir}/man8/puppet-resource.8.gz
 %{_mandir}/man8/puppet-resource_type.8.gz
-%{_mandir}/man8/puppet-secret_agent.8.gz
+#%{_mandir}/man8/puppet-secret_agent.8.gz
 %{_mandir}/man8/puppet-status.8.gz
 %{_mandir}/man8/extlookup2hiera.8.gz
 
@@ -283,9 +300,9 @@ mkdir -p %{buildroot}%{_sysconfdir}/%{name}/modules
 %endif
 %config(noreplace) %{_sysconfdir}/puppet/fileserver.conf
 %dir %{_sysconfdir}/puppet/manifests
-%{_mandir}/man8/puppet-kick.8.gz
+#%{_mandir}/man8/puppet-kick.8.gz
 %{_mandir}/man8/puppet-master.8.gz
-%{_mandir}/man8/puppet-queue.8.gz
+#%{_mandir}/man8/puppet-queue.8.gz
 
 # Fixed uid/gid were assigned in bz 472073 (Fedora), 471918 (RHEL-5),
 # and 471919 (RHEL-4)
@@ -374,6 +391,11 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Mon Apr 27 2015 Haïkel Guémar <hguemar@fedoraproject.org> - 4.0.0-0.1rc1
+- Upstream 4.0.0
+- Fix issue codedir path
+- Fix init provider for Fedora (systemd is default on all supported releases now)
+
 * Wed Apr 22 2015 Orion Poplawski <orion@cora.nwra.com> - 3.7.5-4
 - Do not unbundle puppet's semantic module
 
