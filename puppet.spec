@@ -19,7 +19,7 @@
 
 Name:           puppet
 Version:        3.7.5
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -47,6 +47,8 @@ Requires:       ruby(release)
 Requires:       ruby(shadow)
 
 Requires:       rubygem(json)
+Requires:       rubygem(pathspec)
+Requires:       rubygem(semantic)
 Requires:       rubygem(safe_yaml)
 
 # Prevents jruby from being pulled in by dependencies (BZ #985208)
@@ -373,6 +375,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Sun Apr 19 2015 Orion Poplawski <orion@cora.nwra.com> - 3.7.5-3
+- Require rubygem(pathspec) and rubygem(semantic)
+
 * Tue Mar 31 2015 Orion Poplawski <orion@cora.nwra.com> - 3.7.5-2
 - Unbundle libs (bug #1198366)
 
