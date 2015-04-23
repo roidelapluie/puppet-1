@@ -19,7 +19,7 @@
 
 Name:           puppet
 Version:        3.7.5
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -48,7 +48,6 @@ Requires:       ruby(shadow)
 
 Requires:       rubygem(json)
 Requires:       rubygem(pathspec)
-Requires:       rubygem(semantic)
 Requires:       rubygem(safe_yaml)
 
 # Prevents jruby from being pulled in by dependencies (BZ #985208)
@@ -118,7 +117,7 @@ The server can also function as a certificate authority and file server.
 %setup -q
 chmod +x ext/puppet-load.rb ext/regexp_nodes/regexp_nodes.rb
 # Unbundle
-rm -r lib/puppet/vendor/*
+rm -r lib/puppet/vendor/*{pathspec,rgen,safe_yaml}*
 echo "require 'safe_yaml'" > lib/puppet/vendor/require_vendored.rb
 
 %build
@@ -375,6 +374,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Wed Apr 22 2015 Orion Poplawski <orion@cora.nwra.com> - 3.7.5-4
+- Do not unbundle puppet's semantic module
+
 * Sun Apr 19 2015 Orion Poplawski <orion@cora.nwra.com> - 3.7.5-3
 - Require rubygem(pathspec) and rubygem(semantic)
 
