@@ -1,0 +1,25 @@
+From df2058dde597baf6e1534a05dde879f0a7738fdf Mon Sep 17 00:00:00 2001
+From: Haikel Guemar <hguemar@fedoraproject.org>
+Date: Mon, 13 Apr 2015 14:25:11 +0200
+Subject: [PATCH 2/2] make systemd the default init for fedora in puppet
+
+---
+ lib/puppet/provider/service/systemd.rb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/puppet/provider/service/systemd.rb b/lib/puppet/provider/service/systemd.rb
+index 39ef5ea..89b6b62 100644
+--- a/lib/puppet/provider/service/systemd.rb
++++ b/lib/puppet/provider/service/systemd.rb
+@@ -7,7 +7,7 @@ Puppet::Type.type(:service).provide :systemd, :parent => :base do
+ 
+   defaultfor :osfamily => [:archlinux]
+   defaultfor :osfamily => :redhat, :operatingsystemmajrelease => "7"
+-  defaultfor :osfamily => :redhat, :operatingsystem => :fedora, :operatingsystemmajrelease => ["17", "18", "19", "20", "21"]
++  defaultfor :osfamily => :redhat, :operatingsystem => :fedora
+   defaultfor :osfamily => :suse, :operatingsystemmajrelease => ["12", "13"]
+ 
+   def self.instances
+-- 
+2.3.5
+
