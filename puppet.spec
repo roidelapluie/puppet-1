@@ -17,16 +17,14 @@
 %global pending_upgrade_path %{_localstatedir}/lib/rpm-state/puppet
 %global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
-%global prerelease_tag rc1
-
 Name:           puppet
 Version:        4.0.0
-Release:        0.1%{prerelease_tag}%{?dist}
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
-Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}-%{prerelease_tag}.tar.gz
-Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}-%{prerelease_tag}.tar.gz.asc
+Source0:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz
+Source1:        http://downloads.puppetlabs.com/%{name}/%{name}-%{version}.tar.gz.asc
 Source2:        puppet-nm-dispatcher
 Source3:        puppet-nm-dispatcher.systemd
 Source4:        start-puppet-wrapper
@@ -120,7 +118,7 @@ Provides the central puppet server daemon which provides manifests to clients.
 The server can also function as a certificate authority and file server.
 
 %prep
-%setup -q -n %{name}-%{version}-%{prerelease_tag}
+%setup -q
 %patch01 -p1 -b .paths
 %patch02 -p1 -b .systemd
 # Unbundle
@@ -391,6 +389,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Tue Apr 28 2015 Haïkel Guémar <hguemar@fedoraproject.org> - 4.0.0-1
+- Upstream 4.0.0
+
 * Mon Apr 27 2015 Haïkel Guémar <hguemar@fedoraproject.org> - 4.0.0-0.1rc1
 - Upstream 4.0.0
 - Fix issue codedir path

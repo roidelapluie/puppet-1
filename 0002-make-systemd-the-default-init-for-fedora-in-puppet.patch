@@ -1,4 +1,4 @@
-From df2058dde597baf6e1534a05dde879f0a7738fdf Mon Sep 17 00:00:00 2001
+From 11c7b82c193d88f82cab8b285cebae5be1f3b2b5 Mon Sep 17 00:00:00 2001
 From: Haikel Guemar <hguemar@fedoraproject.org>
 Date: Mon, 13 Apr 2015 14:25:11 +0200
 Subject: [PATCH 2/2] make systemd the default init for fedora in puppet
@@ -21,5 +21,5 @@ index 39ef5ea..89b6b62 100644
  
    def self.instances
 -- 
-2.3.5
+2.3.6
 
