@@ -19,7 +19,7 @@
 
 Name:           puppet
 Version:        4.0.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -199,9 +199,9 @@ install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-agent
 install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-master
 install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-ca
 %if 0%{?_with_systemd}
-sed -i 's|^ExecStart=/opt/puppetlabs/puppet/bin/puppet|ExecStart=/usr/bin/start-puppet-master|' \
+sed -i 's|^ExecStart=/opt/puppetlabs/puppet/bin/puppet|Type=forking\nExecStart=/usr/bin/start-puppet-master|' \
   %{buildroot}%{_unitdir}/puppetmaster.service
-sed -i 's|^ExecStart=/opt/puppetlabs/puppet/bin/puppet|ExecStart=/usr/bin/start-puppet-agent|' \
+sed -i 's|^ExecStart=/opt/puppetlabs/puppet/bin/puppet|Type=forking\nExecStart=/usr/bin/start-puppet-agent|' \
   %{buildroot}%{_unitdir}/puppet.service
 %endif
 
@@ -389,6 +389,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Sun May 17 2015 Haïkel Guémar <hguemar@fedoraproject.org> - 4.0.0-2
+- Fix puppet paths and unit files (upstream #12185)
+
 * Tue Apr 28 2015 Haïkel Guémar <hguemar@fedoraproject.org> - 4.0.0-1
 - Upstream 4.0.0
 
