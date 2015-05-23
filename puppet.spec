@@ -18,8 +18,8 @@
 %global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
 Name:           puppet
-Version:        4.0.0
-Release:        2%{?dist}
+Version:        4.1.0
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -389,6 +389,10 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Sat May 23 2015 Haïkel Guémar <hguemar@fedoraproject.org> - 4.1.0-1
+- Upstream 4.1.0
+- Fix Puppet belief that Fedora is OpenBSD (PUP-4491)
+
 * Sun May 17 2015 Haïkel Guémar <hguemar@fedoraproject.org> - 4.0.0-2
 - Fix puppet paths and unit files (upstream #12185)
 
