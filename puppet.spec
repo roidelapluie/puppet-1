@@ -19,7 +19,7 @@
 
 Name:           puppet
 Version:        4.1.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -389,6 +389,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Thu Jun 18 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.1.0-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
+
 * Sat May 23 2015 Haïkel Guémar <hguemar@fedoraproject.org> - 4.1.0-1
 - Upstream 4.1.0
 - Fix Puppet belief that Fedora is OpenBSD (PUP-4491)
