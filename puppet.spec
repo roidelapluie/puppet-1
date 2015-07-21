@@ -19,7 +19,7 @@
 
 Name:           puppet
 Version:        4.1.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -389,6 +389,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Tue Jul 21 2015 Lukas Zapletal <lzap+rpm@redhat.com> 4.1.0-3
+- Puppet agent is started via exec rather than sub-process
+
 * Thu Jun 18 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.1.0-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
 
