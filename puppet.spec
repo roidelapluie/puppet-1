@@ -19,7 +19,7 @@
 
 Name:           puppet
 Version:        4.1.0
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -199,9 +199,9 @@ install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-agent
 install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-master
 install -Dp -m0755 %{SOURCE4} %{buildroot}%{_bindir}/start-puppet-ca
 %if 0%{?_with_systemd}
-sed -i 's|^ExecStart=/opt/puppetlabs/puppet/bin/puppet|Type=forking\nExecStart=/usr/bin/start-puppet-master|' \
+sed -i 's|^ExecStart=.*/bin/puppet|ExecStart=/usr/bin/start-puppet-master|' \
   %{buildroot}%{_unitdir}/puppetmaster.service
-sed -i 's|^ExecStart=/opt/puppetlabs/puppet/bin/puppet|Type=forking\nExecStart=/usr/bin/start-puppet-agent|' \
+sed -i 's|^ExecStart=.*/bin/puppet|ExecStart=/usr/bin/start-puppet-agent|' \
   %{buildroot}%{_unitdir}/puppet.service
 %endif
 
@@ -389,6 +389,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Tue Jul 28 2015 Lukas Zapletal <lzap+rpm@redhat.com> 4.1.0-4
+- 1246238 - systemd service type changed to 'simple'
+
 * Tue Jul 21 2015 Lukas Zapletal <lzap+rpm@redhat.com> 4.1.0-3
 - Puppet agent is started via exec rather than sub-process
 
