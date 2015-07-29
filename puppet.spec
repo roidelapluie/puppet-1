@@ -18,8 +18,8 @@
 %global pending_upgrade_file %{pending_upgrade_path}/upgrade_pending
 
 Name:           puppet
-Version:        4.1.0
-Release:        4%{?dist}
+Version:        4.2.1
+Release:        1%{?dist}
 Summary:        A network tool for managing many disparate systems
 License:        ASL 2.0
 URL:            http://puppetlabs.com
@@ -31,8 +31,7 @@ Source4:        start-puppet-wrapper
 
 # Puppetlabs messed up with default paths
 Patch01:        0001-Fix-puppet-paths.patch
-# systemd is the default init for all supported Fedora releases
-Patch02:        0002-make-systemd-the-default-init-for-fedora-in-puppet.patch
+Patch02:        0002-Revert-maint-Remove-puppetmaster.service.patch
 Group:          System Environment/Base
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -120,7 +119,7 @@ The server can also function as a certificate authority and file server.
 %prep
 %setup -q
 %patch01 -p1 -b .paths
-%patch02 -p1 -b .systemd
+%patch02 -p1 -b .server
 # Unbundle
 rm -r lib/puppet/vendor/*{pathspec,rgen}*
 echo "require 'safe_yaml'" > lib/puppet/vendor/require_vendored.rb
@@ -389,6 +388,9 @@ exit 0
 rm -rf %{buildroot}
 
 %changelog
+* Wed Jul 29 2015 Gael Chamoulaud <gchamoul@redhat.com> - 4.2.1-1
+- Upstream 4.2.1
+
 * Tue Jul 28 2015 Lukas Zapletal <lzap+rpm@redhat.com> 4.1.0-4
 - 1246238 - systemd service type changed to 'simple'
 
